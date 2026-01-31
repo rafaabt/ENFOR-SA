@@ -1,0 +1,1 @@
+Generated from the Gemmini config 'CustomGemminiWSTinyAccSoCConfig' (see chipyard/generators/gemmini/configs/SocConfigs.scala)

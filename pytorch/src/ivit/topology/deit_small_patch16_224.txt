@@ -1,0 +1,82 @@
+Model: deit_small_patch16_224
+VisionTransformer(
+  (qact_input): 
+  (patch_embed): PatchEmbed(
+    (proj): (QuantConv2d(3, 384, kernel_size=(16, 16), stride=(16, 16)) weight_bit=8, quant_mode=symmetric)
+    (qact): 
+  )
+  (pos_drop): Dropout(p=0.0, inplace=False)
+  (qact_pos): 
+  (qact1): 
+  (blocks): ModuleList(
+    (0): Block(
+      (norm1): IntLayerNorm((384,), eps=1e-06, elementwise_affine=True)
+      (qact1): 
+      (attn): Attention(
+        (qkv): (QuantLinear(in_features=384, out_features=1152, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact1): 
+        (qact_attn1): 
+        (qact2): 
+        (proj): (QuantLinear(in_features=384, out_features=384, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact3): 
+        (qact_softmax): 
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+        (int_softmax): IntSoftmax()
+        (matmul_1): QuantMatMul()
+        (matmul_2): QuantMatMul()
+      )
+      (drop_path): Identity()
+      (qact2): 
+      (norm2): IntLayerNorm((384,), eps=1e-06, elementwise_affine=True)
+      (qact3): 
+      (mlp): Mlp(
+        (fc1): (QuantLinear(in_features=384, out_features=1536, bias=True) weight_bit=8, quant_mode=symmetric)
+        (act): IntGELU()
+        (qact1): 
+        (fc2): (QuantLinear(in_features=1536, out_features=384, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact2): 
+        (drop): Dropout(p=0.0, inplace=False)
+        (qact_gelu): 
+      )
+      (qact4): 
+    )
+    (1-11): 11 x Block(
+      (norm1): IntLayerNorm((384,), eps=1e-06, elementwise_affine=True)
+      (qact1): 
+      (attn): Attention(
+        (qkv): (QuantLinear(in_features=384, out_features=1152, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact1): 
+        (qact_attn1): 
+        (qact2): 
+        (proj): (QuantLinear(in_features=384, out_features=384, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact3): 
+        (qact_softmax): 
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+        (int_softmax): IntSoftmax()
+        (matmul_1): QuantMatMul()
+        (matmul_2): QuantMatMul()
+      )
+      (drop_path): DropPath()
+      (qact2): 
+      (norm2): IntLayerNorm((384,), eps=1e-06, elementwise_affine=True)
+      (qact3): 
+      (mlp): Mlp(
+        (fc1): (QuantLinear(in_features=384, out_features=1536, bias=True) weight_bit=8, quant_mode=symmetric)
+        (act): IntGELU()
+        (qact1): 
+        (fc2): (QuantLinear(in_features=1536, out_features=384, bias=True) weight_bit=8, quant_mode=symmetric)
+        (qact2): 
+        (drop): Dropout(p=0.0, inplace=False)
+        (qact_gelu): 
+      )
+      (qact4): 
+    )
+  )
+  (norm): IntLayerNorm((384,), eps=1e-06, elementwise_affine=True)
+  (qact2): 
+  (pre_logits): Identity()
+  (head): (QuantLinear(in_features=384, out_features=1000, bias=True) weight_bit=8, quant_mode=symmetric)
+  (act_out): 
+)

@@ -1,0 +1,273 @@
+import random
+import csv
+import torch
+import os
+import random
+import math
+import numpy as np
+import pandas as pd
+
+from src import definitions as defs
+from src.gemmini import gemmini_config as conf
+from src.conv import tile_ops as tile_ops
+from src.utils import utils as u
+
+from random import shuffle
+from dataclasses import dataclass
+from collections import deque
+from collections import defaultdict
+from typing import Deque, List, Union, Tuple, Optional
+
+
+# HDFIT assignment IDs for GL fault injection
+HDFIT_FIRST_TARGET_ID = 2     # First one is assign _0056_[16] =( io_in_a[8] & io_in_b[8]) ^ ((fiEnable && (2 == GlobalFiNumber)) ? GlobalFiSignal[0] : {1{1'b0}});
+#HDFIT_LAST_TARGET_ID = 3419  # 32/32-bit inputs/outputs (unsigned mac): Last one is assign _0184_[0] =( _0182_[0]) ^ ((fiEnable && (3419 == GlobalFiNumber)) ? GlobalFiSignal[0] : {1{1'b0}});
+#HDFIT_LAST_TARGET_ID  = 591  # 8/32-bit inputs/outputs (unsigned mac) 
+HDFIT_LAST_TARGET_ID  = 824   # 8/32-bit inputs/outputs (signed mac)
+
+
+# the status of each fault in the fault list 
+# TODO: none of this is currently asserted for VIT models...
+
+@dataclass
+class FaultStatus:
+    msk_gemm:  bool = False # if the fault was masked by Gemmini (note: masked in the **fi layer** )
+    msk_scale: bool = False
+    msk_round: bool = False
+    msk_clamp: bool = False
+    msk_qtz:   bool = False # if the fault was masked by quantization (note: masked in the **fi layer** )
+    critical:  bool = False # if the fault caused a top-1 misclassification
+
+    def __str__(self):
+        return f"Gemm msk: {self.msk_gemm} - Qtz msk: {self.msk_qtz} - Critical: {self.critical}"
+
+
+# the tile positions gemmini will perform the matmul
+# the fault position depends on which of the tiles (A or B) is selected for fault injection
+# the output tile position is (a_row, b_col) -> sweeps all A cols of row a_row, and all B rows of col b_col 
+@dataclass
+class TilePos:
+    a_row: int
+    a_col: int
+    b_row: int
+    b_col: int
+
+# the gemmini positions
+@dataclass
+class GemminiPos:
+    target: int # e.g., in_a, in_b, etc...
+    pe_row: int
+    pe_col: int
+    bit:    int
+    cell:   int=-1 # the cell to inject. if using GL MAC modules
+
+@dataclass
+class Fault:
+    tag: int          # fault id
+    layer_id: int     # target layer
+    att_block: int    # target attention block. appart from the model.head, all other layers belong to a block
+    att_head: int     # target head
+    tile: TilePos     # the tile position
+    gemm: GemminiPos  # the fault position in Gemmini
+    status: FaultStatus
+
+    def __str__(self):
+        #return f"Tag {self.tag} - {self.tile}"
+        return f"Tag {self.tag} - Layer: {self.layer_id} - {self.tile} {self.gemm}"
+
+
+# this is the global fault list used for each fault injection trial
+# load this with fault_list = load_fault_list(<file name>, (start line, end line))
+fault_list = deque[Fault]()
+
+# marks the next fault is a leaf node
+next_fault_is_leaf = False
+
+# marks the next fault (for sequential fault injection)
+next_fault: Fault
+
+BLOCKS=12           # the depth (the number of attention blocks)
+LAYERS_IN_BLOCKS=6  # the layers 0 to 5 as described in instrumented_model.instrument_vit_block()
+
+# the fault list for the attention block
+att_blocks_flist_map = {
+    blk: {layer: [] for layer in range(LAYERS_IN_BLOCKS)}
+    for blk in range(BLOCKS)
+}
+
+# the fault list for the att head
+head_fault_list = []
+
+
+def gen_random_fault(shape_A: Tuple[int, int], 
+                     shape_B:Tuple[int, int], 
+                     layer_id:int, 
+                     possible_targets: List[int], 
+                     depth:int=12, 
+                     num_heads:int=6) -> Fault:
+
+    rows_A, cols_A = shape_A
+    rows_B, cols_B = shape_B
+
+    # the tile positions
+    tile_a_rand_row, tile_a_rand_col = tile_ops.get_random_tile_position(rows_A, cols_A, conf.DIM)
+    tile_b_rand_row, tile_b_rand_col = tile_ops.get_random_tile_position(rows_B, cols_B, conf.DIM)
+    tile_b_rand_row = tile_a_rand_col  # overwrite this. tile_b row must be equal tile_a col
+
+    n  = len(possible_targets)
+    rd = random.randint(0, n-1)
+    target = possible_targets[rd][0]
+    bits   = possible_targets[rd][1]
+
+    att_block = random.randint(0, depth-1)
+    att_head  = random.randint(0, num_heads-1)
+
+    # the pe positions
+    pe_row, pe_col = random.randint(0, conf.DIM-1), random.randint(0, conf.DIM-1)
+    
+    # the target bit
+    bit = random.randint(0, bits-1)
+
+    # target cell for gl injection
+    cell = random.randint(HDFIT_FIRST_TARGET_ID, HDFIT_LAST_TARGET_ID)
+
+    vals = [tile_a_rand_row, tile_a_rand_col, tile_b_rand_row, tile_b_rand_col, # the tile position
+            target, pe_row, pe_col, bit, cell]  # the position inside gemmini
+
+    return Fault(42, 
+                 layer_id, 
+                 att_block, 
+                 att_head,
+                 TilePos(*vals[0:4]), 
+                 GemminiPos(*vals[4:9]), 
+                 FaultStatus(False, False, False))
+
+
+# receives the shape of the two unfolded tensors (each of shape [rows][cols])
+# creates a fault list in the form:
+# layer_no, tile_a_row, tile_a_col, tile_b_col, target, pe_row, pe_col, bit
+def generate_fault_list(layer_id, 
+                        shape_A, 
+                        shape_B, 
+                        start_tag, 
+                        possible_targets: List[int], 
+                        depth:int=12, 
+                        num_heads:int=6,
+                        max_faults=10000) -> List[Fault]:
+    rows_A, cols_A = shape_A
+    rows_B, cols_B = shape_B
+
+    if cols_A != rows_B:
+        raise ValueError("Matrix dimensions do not match for multiplication.")
+
+    new_fault_list = []
+    # use a fixed random if required
+    random.seed(42)
+
+    # start_tag: when generating the fault list for all layers generate_fault_list() is called once per layer. start_tag allows to keep the tag counter accross all layers
+    l = 0
+
+    while l < max_faults:
+        random_fault = gen_random_fault(shape_A, shape_B, layer_id, possible_targets, depth=depth, num_heads=num_heads)
+        random_fault.tag = start_tag + l
+        new_fault_list.append(random_fault)
+        l += 1
+
+    return new_fault_list 
+
+
+# dumps the fault list to a file
+def dump_fault_list (flist: List[Fault], fn="default.csv"):
+    filename = f"./fault_lists/{fn}"
+
+    header = ['tag', 
+              'layer', 
+              'block', 
+              'head', 
+              'tile_a_row', 
+              'tile_a_col', 
+              'tile_b_row', 
+              'tile_b_col', 
+              'target', 
+              'pe_row', 
+              'pe_col', 
+              'bit', 
+              'cell']
+
+    #print(f"Dumping fault list to file {filename} - size {len(flist)}")
+
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file, delimiter='\t')
+        writer.writerow(header)
+
+        for fault in flist:
+            csv_row = [fault.tag, 
+                       fault.layer_id,
+                       fault.att_block, 
+                       fault.att_head,
+                       fault.tile.a_row, 
+                       fault.tile.a_col,
+                       fault.tile.b_row, 
+                       fault.tile.b_col,
+                       fault.gemm.target, 
+                       fault.gemm.pe_row, 
+                       fault.gemm.pe_col,
+                       fault.gemm.bit, 
+                       fault.gemm.cell]
+                       
+            writer.writerow(csv_row)
+
+    print(f"Saved fault list: {fn}  -  Size: {len(flist)} rows")
+
+
+# loads the fault list in a given line range (line zero is always skipped)
+# the list is read from the file created by the generate_fault_list() function
+# the fault list is returned in form of a deque
+def load_fault_list(fn_list: str, 
+                    itv_tuple: Union[int, Tuple[int, int]], # itvl tuple = (row_start, row_end)
+                    filters: Optional[dict]=None, 
+                    shuffle_list=False) -> deque[Fault]: 
+
+    file_path = f"./fault_lists/{defs.MODEL_NAME}/{fn_list}"
+
+    if not os.path.exists(file_path):
+        raise ValueError(f"Missing fault list: {file_path}")
+        
+    if filters:
+        df = u.filter_csv(in_fn=file_path, filters=filters)
+    else:
+        df = pd.read_csv(file_path, comment='#', sep='\t')   
+
+    row_start, row_end = (itv_tuple, itv_tuple) if isinstance(itv_tuple, int) else itv_tuple
+
+    filtered_rows = df.iloc[row_start:row_end+1]
+
+    # Convert each row into a list and store in a list
+    fault_list_rows = filtered_rows.values.tolist()
+
+    if shuffle_list:
+        random.shuffle(fault_list_rows)
+                
+    new_fault_list = deque()
+ 
+    for vals in fault_list_rows: 
+        new_fault_list.append(Fault(vals[0], 
+                                    vals[1], 
+                                    vals[2], 
+                                    vals[3], 
+                                    TilePos(*vals[4:8]), 
+                                    GemminiPos(*vals[8:13]), 
+                                    FaultStatus(False, False, False)))
+
+    return new_fault_list
+
+
+# returs a sublis in baselist
+def load_sub_fault_list(base_list: deque[Fault], itv_tuple: Union[int, Tuple[int, int]]) -> deque[Fault]:
+    # Ensure itv_tuple is a valid interval
+    idx_start, idx_end = (itv_tuple, itv_tuple) if isinstance(itv_tuple, int) else itv_tuple
+
+    # Extract elements manually since deque does not support slicing
+    sub_list = deque(list(base_list)[idx_start:idx_end+1]) # [start, end]  
+
+    return sub_list
