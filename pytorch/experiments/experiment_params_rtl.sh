@@ -1,9 +1,5 @@
 # Simulation parameters
 
-# Requirements for RTL simulation:
-# in definitions.py:
-#   1 - set FI_GEMM = True
-#   2 - set GL_INJECTION = False
 
 #
 # The experiment report files. Those are placed in the folder reports/$model/$experiment. Each experiment type should be placed in its own folder
@@ -13,7 +9,27 @@ experiment="exp-outputs-RTL-v1"
 #
 # The Gemmini configuration key (only valid for RTL/GL injection). See all available config keys in gemmini_config.py
 #
+# OS configs
+#gemmini_config_key="OSDIM4"
 gemmini_config_key="OSDIM8"
+#gemmini_config_key="OSDIM16"
+#gemmini_config_key="OSDIM32"
+#gemmini_config_key="OSDIM64"
+
+# OS with TMR PEs
+#gemmini_config_key="OSDIM8_TMR"
+
+# OS configs with HDFIT FI instrumentation
+#gemmini_config_key="OSDIM4_HDFIT"
+#gemmini_config_key="OSDIM8_HDFIT"
+#gemmini_config_key="OSDIM16_HDFIT"
+#gemmini_config_key="OSDIM32_HDFIT"
+#gemmini_config_key="OSDIM64_HDFIT"
+
+# WS configs
+#gemmini_config_key="WSDIM4"
+#gemmini_config_key="WSDIM8"
+
 
 #
 # The desired fault model

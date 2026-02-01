@@ -8,7 +8,7 @@ The required modules are listed in `requirements.txt`. It's advisable to install
 
 ```
 python3 -m venv <your env path>
-source  <your env path>/bin/activate
+source <your env path>/bin/activate
 python3 -m pip install -r requeriments.txt
 ```
 
@@ -18,7 +18,7 @@ For fault injection tests, you will also need a copy of the validation set of [I
 Verilator is only necessary if you need to:
 - Integrate new Gemmini configs with the framework;
 - Recompile the verilated systolic array code for your machine.
-Some array configs are already provided in `rtl/designs`. These configs are already compiled in `rtl/verilated`. 
+Some array configs are already provided in [rtl/designs](rtl/designs). These configs are already compiled in [rtl/verilated](rtl/verilated). 
 
 To use the configurations already provided, you do not need to install verilator. In case you need to [install verilator](https://verilator.org/guide/latest/install.html), make sure to use **version 4.224** to match the HDFIT version (more on this latter). 
 
@@ -37,30 +37,29 @@ This tests basic systolic array operations required for matmuls: input preloadin
 > The tests take a while to start running when executed for the first time for each new tested array configuration. This is due to the backend compilation of the Gemmini modules and C++ extensions to interface PyTorch with the verilated array model. Latter uses of the same configuration run much faster as PyTorch keeps each compiled configuration cached and no re-compilation is performed (unlsess you change the compilation flags or backend source code).
 
 ### Validate against HDIFT
-We validate our injection approach by comparing against the [HDFIT](https://intellabs.github.io/HDFIT/) injection procedure. HDFIT relies on verilog code instrumentation for fault injection, and provides ground thruth faulty matmul results. Run:
+We validate our injection approach by comparing against the [HDFIT](https://intellabs.github.io/HDFIT/) injection procedure. HDFIT relies on verilog code instrumentation for fault injection, and provides ground thruth injection results by instrumenting every assignment directly in verilog code. Run:
 ```
 python tests/test_hdfit.py
 ```
 This should output "Trials not matching HDFIT:  0".
 
-
 ## Run injection experiments
 Faults can be injected in RTL models of systolic arrays (directly in PE registers using verilator) or in SW-level (directly in PyTorch tensors). We do not provide any SW-based noise model for errors in SW. Only (naive) random bit flips in the tensors are performed as this aims to provide a baseline for accuracy comparison w.r.t more accurate injection approaches. 
 
-First, make sure you have the validation set of [ImageNet](https://www.image-net.org/index.php). Then follow the next steps.
+First, make sure you have the validation set of [ImageNet](https://www.image-net.org/index.php) (there's no need to download the train and test sets!). Then follow the next steps.
 
 ### Setup the experiment parameters
-Experiment setups are defined in the experiment scripts. Examples are available in the `experiments` folder, where your experiment configurations must be stored. You can have multiple experiment files stored in this folder. Source a single one in the `experiment.sh` file.
+Experiment setups are defined in the experiment scripts. Examples are available in the [pytorch/experiments](pytorch/experiments) folder, where your experiment configurations must be stored. You can have multiple experiment files stored in this folder. Source a single one in the [`pytorch/experiment.sh`](pytorch/experiment.sh) file.
 
 #### Setup the main simulation script (run.sh)
-This is the main execution script (`run.sh`). It loops over each desired model/target layer, loads the selected experiment script and invokes the fault injection tool. 
+This is the main execution script ([`run.sh`](pytorch/run.sh)). It loops over each desired model/target layer, loads the selected experiment script and invokes the fault injection tool. 
 
 In this script, set the DNN models to experiment with (the `$models` array) and target layers to inject (`$target_layers`). All other experiment parameters are kept in experiment files, as described next.
 
 #### Setup the experiment parameters (experiment scripts)
-Follow the examples of experiment scripts already provided (e.g.,`experiments/experiment_params_rtl.sh`). Among other things, the main experiment parameters are as follows:
+Follow the examples of experiment scripts already provided (e.g.,[`pytorch/experiments/experiment_params_rtl.sh`](pytorch/experiments/experiment_params_rtl.sh)). Among other things, the main experiment parameters are as follows:
 1. The experiment name: in the `$experiment` variable. This will be the folder name for the report files. The `$sim_alias` variable will be the report file name. Be careful not to mix different experiment types and runs in the same folder/file (results accumulate in the files);
-2. The fault model:  set the `$fault_model` variable to the desired fault model. Current options are "rtl" and "sw";
+2. The fault model: set the `$fault_model` variable to the desired fault model. Current options are **"rtl"** and **"sw"**;
 3. The Gemmini configuration case to be injected (`$gemmini_config_key`). There are many options commented in the scripts;
 4. The fault list (`$fault_list`). Examples of lists are provided in [pytorch/fault_lists](pytorch/fault_lists), for the ImageNet dataset and an 8x8 Output Stationary Gemmini config. New fault lists can be generated by calling `python gen_fault_list.py <model name>`. The fault list generation depends on the fault model (and desired array configuration for RTL fault lists). Before generating new fault lists, these options must be set properly in the fault list generation script: just tweak the `USE_SA` and `CONFIG_KEY` variables;
 5. The number of faults to inject (`$injections`), the batch size (`$batch_size`), and number of batches (`$nbatches`) in the experiment.
@@ -83,20 +82,21 @@ If desired, fault injection can be performed in specific targets by filtering th
 **Directions:** Target filters can be customized in the file [`pytorch/src/flist/fi_target.py`](pytorch/src/flist/fi_target.py). To inject only a given target type, configure the global dictionary `fault_target` with the desired filters, as shown in the examples provided in the same file.
 
 ### Run the experiment
-1. All experiments must run from the `pytorch` folder: `cd pytorch`;
-2. In the file `pytorch/src/definitions.py`: Set your ImageNet path in `PATH_IMAGENET`;
-3. In the `run.sh` script: select the desired models and layers to inject;
-4. In the `experiments` folder: configure an experiment script, according to the examples provided (e.g., `experiment_params_rtl.sh`);
-5. In the `experiment.sh` script: source your experiment script (e.g., `experiment_params_rtl.sh`). You can have multiple experiment files in the `experiments` folder. Source a single one;
-6. Hit `./run.sh`.
+The experiments must be run in the `pytorch` folder. First,`cd pytorch`, then configure the following scripts:
+
+1. Script [`pytorch/src/definitions.py`](pytorch/src/definitions.py): Set your ImageNet path in `PATH_IMAGENET`;
+2. Script [`pytorch/run.sh`](pytorch/run.sh): Select the desired models and layers to inject;
+3. Folder [pytorch/experiments](pytorch/experiments): Create and configure an experiment script, according to the examples provided (e.g., [`experiment_params_rtl.sh`](pytorch/experiments/experiment_params_rtl.sh));
+4. Script [`pytorch/experiment.sh`](pytorch/experiment.sh): Source your experiment script (e.g., `experiment_params_rtl.sh`). You can have multiple experiment files in the `experiments` folder. Source a single one;
+5. Hit `./run.sh`.
 
 The experiment results are logged in `pytorch/reports`. Two types of report files are generated: the `batch` folder summarizes per-batch data (e.g., total number of critical faults per batch per injected layer). The `trace` folder logs data for each individual injected fault and input.
 
 ### Example of trace file for RTL injections
 The table below shows an example of a trace file generated for RTL injections. The file stores the full fault position: the injected layer, tile position offloaded to the array, target PE, the type of register (inputs, outputs or control) injected in the PE (column “target”) and target bit. 
 
-The main classification effects of the fault is shown in columns sdc1 and sdc5. 
-The “sdc1” flag is asserted if the fault caused the Top-1 classification label to diverge from the golden label. The “sdc5” flag indicates a more aggressive fault, as it is asserted if the Top-1 label is not any of the Top-5 golden labels. For quantized CNN models, we also keep track wheather the fault was masked by the array right during the HW matmul (gemm_msk) or during any SW phase of the requantization steps (during scaling, rounding or clamping). If the fault is not masked in any of these stages, it gets exposed to the SW by corrupting the layer's output. This effect in the layer may or may not lead to SDCs.
+The main classification effects of the fault is shown in columns *sdc1* and *sdc5*. 
+The sdc1 flag is asserted if the fault caused the Top-1 classification label to diverge from the golden label. The sdc5 flag indicates a more aggressive fault, as it is asserted if the Top-1 label is not any of the Top-5 golden labels. For quantized CNN models, we also keep track wheather the fault was masked by the array right during the HW matmul (*gemm_msk*) or during any SW phase of the requantization steps (scaling - *scale_msk*, rounding - *round_msk* or clamping - *clamp_msk*). If the fault is not masked in any of these stages, it gets exposed to the SW by corrupting the layer's output. This effect in the layer may or may not lead to SDCs.
 
 | input_id | fault_tag | layer | tile_row | tile_col | target | pe_row | pe_col | bit | sdc1 | sdc5 | err_cat_inc | gemm_msk | scale_msk | round_msk | clamp_msk | qtz_msk | rank_var | score_var |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

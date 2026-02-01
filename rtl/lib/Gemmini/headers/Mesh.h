@@ -8,12 +8,10 @@
 #include "utils.h"
 
 #define PDIM (2*DIM-1) // dims for the padded matrices
-
-const uint32_t TIMEOUT_ITERS = (1000*PDIM);
-
-//typedef function<void(uint8_t,uint8_t)> callback_type; // older version for flipBitInA (uint8_t row, uint8_t col)
+#define TIMEOUT_ITERS (1000*PDIM)
 
 typedef function<void(uint8_t)> callback_type;
+
 
 class Mesh
 {
@@ -35,7 +33,7 @@ public:
         /* Setup the callback functions to perform fault injections in all types of PE inputs 
             Ex.: to perform fault injections on input 1 (group IDX_MeshRegs) of PE(2,3), call cbApplyTransientFault[IDX_MeshRegs](2, 3); */
     
-        cbApplyTransientFault.resize (NUMBER_OF_REGISTER_CLUSTERS);
+        cbApplyTransientFault.resize(NUMBER_OF_REGISTER_CLUSTERS);
         
         /* Transient data faults */
         cbApplyTransientFault[IDX_io_in_a]  = (callback_type)std::bind(&Mesh::flipBitInA,  this, std::placeholders::_1);
@@ -51,7 +49,7 @@ public:
 
         /* Transient control faults */
         cbApplyTransientFault[IDX_valid] = (callback_type)std::bind(&Mesh::flipBitValid, this, std::placeholders::_1);
-        cbApplyTransientFault[IDX_propagate] = (callback_type)std::bind(&Mesh::flipBitPropB, this, std::placeholders::_1);
+        cbApplyTransientFault[IDX_propagate] = (callback_type)std::bind(&Mesh::flipBitPropagB, this, std::placeholders::_1);
 
     #ifdef ENABLE_PERMANENT_FAULTS
         /* Permanent faults in data. */
@@ -87,13 +85,13 @@ public:
     void loadPointers();
     void reset();
 
-    void flipBitInA (uint8_t f);
-    void flipBitInB (uint8_t f);
-    void flipBitInD (uint8_t f);
-    void flipBitOutA (uint8_t f);
-    void flipBitOutB (uint8_t f);
-    void flipBitMacOut (uint8_t f);
-    void flipBitPropB (uint8_t f);
+    void flipBitInA(uint8_t f);
+    void flipBitInB(uint8_t f);
+    void flipBitInD(uint8_t f);
+    void flipBitOutA(uint8_t f);
+    void flipBitOutB(uint8_t f);
+    void flipBitMacOut(uint8_t f);
+    void flipBitPropagB(uint8_t f);
     void flipBitValid(uint8_t f);
 
     void flipBitC1(uint8_t f);
@@ -101,9 +99,9 @@ public:
 
 #if ENABLE_PERMANENT_FAULTS
     void holdPermanentFaults();
-    void holdPermaFaultInA (uint8_t idx);
-    void holdPermanentFaultInB (uint8_t idx);
-    void holdPermanentFaultC2 (uint8_t idx);
+    void holdPermaFaultInA(uint8_t idx);
+    void holdPermanentFaultInB(uint8_t idx);
+    void holdPermanentFaultC2(uint8_t idx);
     void holdPermanentFaultValid(uint8_t idx);
     void holdPermanentFaultPropag(uint8_t idx);
 #endif
@@ -120,11 +118,13 @@ public:
         faultList.clear();
     }
 
+
     Output_t getMacOut()
     {  
         Fault *fault = faultList[0];
         return pe[fault->row][fault->col]->getOutput();
     }
+
 
     void setMacOut (Output_t data)
     {  
@@ -132,6 +132,8 @@ public:
         pe[fault->row][fault->col]->setMacOut(data);
     }
 
+
+    // the Top verilated Mesh model
     VL_DUT *dut = nullptr;
 
     vector<vector<Pe*>>pe;
@@ -147,9 +149,9 @@ public:
     Input_t *ptr_mesh_out_b[DIM];
     Output_t *ptr_mesh_out_c[DIM];
     
-    //CData *ptr_mesh_shift[DIM];
     CData *ptr_mesh_valid[DIM];
     CData *ptr_mesh_propagate[DIM];
+    //CData *ptr_mesh_shift[DIM];
 
     vector<Fault*> faultList;
 };
@@ -211,7 +213,6 @@ void Mesh::loadPointers()
 
         ptr_mesh_valid[i] = (CData*)mesh_valid[i];
         ptr_mesh_propagate[i] = (CData*)mesh_propagate[i];
-
         //ptr_mesh_shift[i] = (CData*)mesh_shift[i];
      }
 }
@@ -329,17 +330,35 @@ void Mesh::flipBitMacOut (uint8_t f)
 }
 
 
-void Mesh::flipBitPropB (uint8_t f)
+void Mesh::flipBitPropagB (uint8_t f)
 {
     Fault *fault = faultList[f];
-    pe[fault->row][fault->col]->flipBitPropB();
+
+    if (fault->row == 0)
+    {
+        uint32_t mask = 1U << fault->bit; 
+
+        *(Input_t*)ptr_mesh_propagate[fault->col] ^= mask;   
+    }
+
+    else
+        pe[fault->row][fault->col]->flipBitPropagB();
 } 
 
 
 void Mesh::flipBitValid(uint8_t f)
 {
     Fault *fault = faultList[f];
-    pe[fault->row][fault->col]->flipBitValid();
+
+    if (fault->row == 0)
+    {
+        uint32_t mask = 1U << fault->bit; 
+
+        *(Input_t*)ptr_mesh_valid[fault->col] ^= mask;   
+    }
+    
+    else
+        pe[fault->row][fault->col]->flipBitValid();
 }
 
 
@@ -393,23 +412,22 @@ void Mesh::holdPermanentFaultPropag(uint8_t idx)
 #endif
 
 
-void Mesh::reset ()
+void Mesh::reset () // resets the ctrl signals and inputs only
 {
     LOOP(i,DIM)
     {
         *(Input_t*)ptr_mesh_in_a[i] = 0;
         *(Input_t*)ptr_mesh_in_b[i] = 0;
 
-        //*(Output_t*)ptr_mesh_out_b[i] = 0;
+        //*(Output_t*)ptr_mesh_out_b[i] = 0; // no. for ws this will erase the preloaded values.
         *(CData*)ptr_mesh_valid[i] = 0;
         *(CData*)ptr_mesh_propagate[i] = 0;
         
         //*(CData*)ptr_mesh_shift[i] = 0;
 
-        //#ifdef GEMM_WS
-            LOOP(j,DIM) // IMPORTANT!!  this is important for the WS mode! do not "remove for perf!!" this line
-                pe[i][j]->reset();
-        //#endif
+
+        LOOP(j,DIM) 
+            pe[i][j]->reset();
     }
 }
 

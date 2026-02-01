@@ -21,8 +21,8 @@ public:
     /* Pointers to tile signals (see how these signals are mapped to the tile in the file signals.txt) */
 
     void *ptr_in_a;  // input a (propag left->right)
-    void *ptr_in_b;  // input b (propag top->bottom)   (in WS mode, this comes from c2)
-    void *ptr_in_d;
+    void *ptr_in_b;  // input b (propag top->bottom)
+    void *ptr_in_d;  // input d (propag top->bottom) - preloads only
    
     void *ptr_out_a = nullptr; // the last column has not out_a output register    
     void *ptr_out_b;
@@ -34,7 +34,6 @@ public:
     void *ptr_c1;
     void *ptr_c2;   
 
-    inline void tick(uint64_t u64Cycle);
     void reset();
 
     void flipBitInA(uint8_t bit);
@@ -45,7 +44,7 @@ public:
     void flipBitOutB(uint8_t bit);
     void flipBitMacOut(uint8_t bit);
 
-    void flipBitPropB();
+    void flipBitPropagB();
     void flipBitValid();
 
     void flipBitC1(uint8_t bit);
@@ -82,7 +81,6 @@ public:
     #endif
     }
 
-
     void setMacOut (Output_t data)
     {  
     #if GEMM_OS
@@ -91,7 +89,6 @@ public:
         *(Output_t*)ptr_out_b = data;
     #endif
     }
-
 
     uint8_t peRow, peCol;
 };
@@ -177,7 +174,7 @@ void Pe::flipBitValid()
 }
 
 
-void Pe::flipBitPropB ()
+void Pe::flipBitPropagB ()
 {
     *(CData*)ptr_propagate = (*(CData*)ptr_propagate)^1U; 
 }

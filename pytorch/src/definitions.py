@@ -7,18 +7,6 @@ PATH_IMAGENET='~/ImageNet/'
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 """
     Fixed default options. These options are overwritten in src/flist/fl.py. do not touch them here
 """    

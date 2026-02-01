@@ -9,14 +9,14 @@ MODE_WS = 1  # Weight stationary
 #   When porting new configs:
 #       1 - the parameters must match the definitions in the configuration defined in the headers in rtl/lib/Gemmini/headers/configs/<config header file>
 #       2 - the PE input and output data types must match the Input_t and Output_t definitions in the config header (rtl/lib/Gemmini/headers/configs/<config header file>)
-#       3 - the path key must **match exactly** the folders of the verilated designs (defined in the script rtl/runverilator.sh -> variable CONFIG)
+#       3 - the path key must **match exactly** the folders of the verilated designs (defined in the script rtl/verilate.sh -> variable CONFIG)
 CONFIG_PARAMS = {
     #
     # OS configs
     #
     "OSDIM4": 
     {
-        "path":     "CustomGemminiOSTinySoCConfig", # the path (in folder "rtl/verilated") associated with the config (defined in rtl/runverilator.sh, variable CONFIG)
+        "path":     "CustomGemminiOSTinySoCConfig", # the path (in folder "rtl/verilated") associated with the config (defined in rtl/verilate.sh, variable CONFIG)
         "dim":       4,                             # the SA dimention (used for tile extraction and manipulation)
         "in_bits":   8,                             # the SA MAC input bits (verilated model only). used to generate the fault lists
         "out_bits":  32,                            # the SA MAC output bits. used to generate the fault lists

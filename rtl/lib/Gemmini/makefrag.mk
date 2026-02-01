@@ -13,7 +13,7 @@ LIBNAME=any
 #
 
 #CONFIG=CustomGemminiOSTinySoCConfig
-#CONFIG=CustomGemminiOSMediumSoCConfig
+CONFIG=CustomGemminiOSMediumSoCConfig
 #CONFIG=CustomGemminiOSBigSoCConfig
 #CONFIG=CustomGemminiOSHugeSoCConfig
 #CONFIG=CustomGemminiOSMediumFTSoCConfig
@@ -27,10 +27,10 @@ LIBNAME=any
 # WS CONFIGS
 #
 #CONFIG=CustomGemminiWSTinySoCConfig
-CONFIG=CustomGemminiWSMediumSoCConfig
+#CONFIG=CustomGemminiWSMediumSoCConfig
 
-#MODE=GEMM_OS
-MODE=GEMM_WS
+MODE=GEMM_OS
+#MODE=GEMM_WS
 
 FI_LEVEL=USE_RTL_INJECTION
 #FI_LEVEL=USE_GL_INJECTION

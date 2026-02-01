@@ -55,7 +55,31 @@ steps_mul = gemmini_ws.stream_bias(A, D, C) # use this D is not zero
 ```
 
 ### Adding transient faults
-Transient faults can be added to Gemmini through an interface. The possible target signals are identified by an enumeration in `/pytorch/src/gemmini/gemmini_config.py`, in the variable `SIGNAL`. To add faults, do as follows:
+Transient faults can be added to Gemmini through an interface. The possible target signals are identified by a dictionary in [`/pytorch/src/gemmini/gemmini_config.py`](gemmini_config.py), in the variable `SIGNAL`, as follows:
+
+```
+SIGNAL = {
+    # Data signals  - PE inputs
+    "IN_A":  (IN_A, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
+    "IN_B":  (IN_B, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
+    "IN_D":  (IN_D, PE_OUT_BITS), # input D signal (during preloads only)
+    
+    # Data signals - PE outputs
+    "OUT_A": (OUT_A, PE_IN_BITS),  # this was added much latter. do not change the ids to keep compatibility with the fault lists...
+    "OUT_B": (OUT_B, PE_OUT_BITS), # check if this just passes in_b through the PE (OS), or for WS maybe it passes the partial sums
+    "OUT_C": (OUT_C, PE_OUT_BITS), # the C2 register
+
+    # Data signals - each PE has two state registers to store: 1. accumulators in OS, or 2. weights in WS - in each case, only one reg. is actually used
+    "C1":   (C1, PE_OUT_BITS),
+    "C2":   (C2, PE_OUT_BITS),
+
+    # Control signals
+    "SIG_PROPAG":   (SIG_PROPAG, 1),
+    "SIG_VALID":    (SIG_VALID,  1),
+}
+```
+
+To add faults to Gemmini, do as follows:
 
 ```
 # Select a target signal. Examples are:
@@ -66,7 +90,7 @@ target = 5 # propagate control register
 target = 6 # valid control register
 
 # Select a PE position and target bit in the register
-pe_row, pe_col, bit = 3, 4, 5
+pe_row, pe_col, bit = 1, 2, 3
 fiSilent = True # prints the injected fault in the moment it's injected
 
 # Add the fault before streaming the inputs
@@ -78,7 +102,7 @@ gemmini_os.add_transient_fault(target, pe_row, pe_col, bit, 0, fiSilent)
 In OS  mode, one should reuse the outputs by keeping them in the internal PE accumulators. To do so, only flush the PE outputs when the final result is computed. For example, to compute:
 
 ```
-# Example: C = A1×B1 + A2×B2 + A3×B3 + D
+# Example: C = A1×B1 + A2×B2 + A3×B3 + ... + An×Bn + D
 
 # Preload the D matrix
 steps_pre = gemmini_os.preload(D)
@@ -87,9 +111,11 @@ steps_pre = gemmini_os.preload(D)
 steps_mul = gemmini_os.stream(A1, B1) 
 steps_mul = gemmini_os.stream(A2, B2) 
 steps_mul = gemmini_os.stream(A3, B3)
+...
+steps_mul = gemmini_os.stream(An, Bn)
 
 # Only now you can flush the outputs
-steps_flu = gemmini_os.flush_gemm(C, FLUSH_TRANSPOSED)
+steps_flu = gemmini_os.flush_gemm(C, False)
 ```
 ### Tips on WS
 In WS, reuse the weights as much as possible. For example, to compute multiple matmuls that share a common weights, like in the example below, do:
@@ -100,6 +126,8 @@ Example:
     C1 = A1×W + D1
     C2 = A2×W + D2
     C3 = A3×W + D3
+    ...
+    Cn = An×W + Dn
 """
 
 # Preload the W matrix
@@ -109,19 +137,19 @@ steps_pre = gemmini_ws.preload(W)
 steps_mul = gemmini_ws.stream_bias(A1, D1, C1)
 steps_mul = gemmini_ws.stream_bias(A2, D2, C2)
 steps_mul = gemmini_ws.stream_bias(A3, D3, C3)
+...
+steps_mul = gemmini_ws.stream_bias(An, Dn, Cn)
 ```
 
 ### Tiled matmuls
 Computing large matrix multiplications with Gemmini requires tiling. 
 The mapping of the tiles to the SA depends on the Gemmini mode (OS or WS). These tiling and mapping functions are available in [`pytorch/src/gemmini/gemmini_interface.py`](gemmini_interface.py). Check the `tiled_matmul` function. These tiling functions assure output reuse (for OS) or weight reuse (for WS). Check the examples provided [here](../../tests/test_perf.py), function `perf_measure_resnet50_first_layer()`.
 
-
 ## Higher level API
 A high-level Gemmini API is available in [`pytorch/src/gemmini/gemmini_interface.py`](gemmini_interface.py). This is an alternative way to use Gemmini instead of making calls directly to the C++ extension interface. Follow the examples:
 
 Load the API module:
 ```
-import src.gemmini.gemmini_config as conf
 import src.gemmini.gemmini_interface as gemmini_interface
 ```
 

@@ -1,9 +1,5 @@
 # Simulation parameters
 
-# Requirements for GL simulation:
-# in definitions.py:
-#   1 - set FI_GEMM = False
-#   2 - set GL_INJECTION = False
 
 #
 # The experiment report files. Those are placed in the folder reports/$model/$experiment. Each experiment type should be placed in its own folder

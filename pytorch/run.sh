@@ -27,7 +27,7 @@ MobileNet_V3_Large_target_layers=(0 1 2 10 20 30 40 50 59 60 61)
 GoogLeNet_target_layers=(0 1 2 10 15 20 25 30 35 40 45 50 54 55 56) 
 Inception_V3_target_layers=(0 1 2 10 20 30 40 50 60 70 80 90 92 93) 
 
-# deit layers (all variations)
+# deit layers (all variants)
 deit_layers=(0 1 2 3 4 5 6)
 
 target_layers=(

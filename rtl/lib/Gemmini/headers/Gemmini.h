@@ -72,14 +72,12 @@ public:
     uint32_t preload(const Input_t M[DIM][DIM]);
 #endif
 
-    //void debugOnlyEvalFaultTrial(); // Debug only
-
-    void addFaultToList (FaultModel fm, int grp, int row, int col, int bit, int cell, bool silent) // set fault attributes for transient faults
+    void addFaultToList(FaultModel fm, int grp, int row, int col, int bit, int cell, bool silent) // set fault attributes for transient faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, cell, silent));
     }
 
-    void addFaultToList (FaultModel fm, int grp, int row, int col, int bit, int pol, int cell, bool silent)  // set fault attributes for permanent faults
+    void addFaultToList(FaultModel fm, int grp, int row, int col, int bit, int pol, int cell, bool silent)  // set fault attributes for permanent faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, pol, cell, silent));
     }
@@ -556,8 +554,9 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
 
 
 
+/* HDFIT was validated againts OS DIM8 only.  ENABLE_HDFIT_VALIDATION must be defined in configs/<config header> */
 
-#ifdef ENABLE_HDFIT_VALIDATION // HDFIT was validated againts OS DIM8 only.  ENABLE_HDFIT_VALIDATION must be defined in configs/<config header>
+#ifdef ENABLE_HDFIT_VALIDATION
 
 void Gemmini::hdfit_inject(uint32_t it)
 {
