@@ -58,6 +58,11 @@ steps_mul = gemmini_ws.stream_bias(A, D, C) # use this D is not zero
 Transient faults can be added to Gemmini through an interface. The possible target signals are identified by a dictionary in [`/pytorch/src/gemmini/gemmini_config.py`](gemmini_config.py), in the variable `SIGNAL`, as follows:
 
 ```
+IN_A=0
+IN_B=1
+IN_D=2
+...
+...
 SIGNAL = {
     # Data signals  - PE inputs
     "IN_A":  (IN_A, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
@@ -65,36 +70,53 @@ SIGNAL = {
     "IN_D":  (IN_D, PE_OUT_BITS), # input D signal (during preloads only)
     
     # Data signals - PE outputs
-    "OUT_A": (OUT_A, PE_IN_BITS),  # this was added much latter. do not change the ids to keep compatibility with the fault lists...
-    "OUT_B": (OUT_B, PE_OUT_BITS), # check if this just passes in_b through the PE (OS), or for WS maybe it passes the partial sums
-    "OUT_C": (OUT_C, PE_OUT_BITS), # the C2 register
+    "OUT_A": (OUT_A, PE_IN_BITS),
+    "OUT_B": (OUT_B, PE_OUT_BITS),
+    "OUT_C": (OUT_C, PE_OUT_BITS), # OS: accumulator. WS: Partial sum
 
     # Data signals - each PE has two state registers to store: 1. accumulators in OS, or 2. weights in WS - in each case, only one reg. is actually used
     "C1":   (C1, PE_OUT_BITS),
     "C2":   (C2, PE_OUT_BITS),
 
     # Control signals
-    "SIG_PROPAG":   (SIG_PROPAG, 1),
-    "SIG_VALID":    (SIG_VALID,  1),
+    "SIG_PROPAG":   (SIG_PROPAG, 1), # the propagate ctrl signal
+    "SIG_VALID":    (SIG_VALID,  1), # the valid ctrl signal
 }
 ```
 
 To add faults to Gemmini, do as follows:
 
 ```
-# Select a target signal. Examples are:
-target = 0 # input register A
-target = 1 # input register B
-target = 4 # accumulator output, for OS only
-target = 5 # propagate control register
-target = 6 # valid control register
+import src.gemmini.gemmini_config as conf
+from src.gemmini.gemmini_config import *
 
-# Select a PE position and target bit in the register
-pe_row, pe_col, bit = 1, 2, 3
-fiSilent = True # prints the injected fault in the moment it's injected
+#
+# Select a target signal. Examples are:
+#
+signal = SIGNAL["IN_A"]       # input register A
+signal = SIGNAL["IN_B"]       # input register B
+signal = SIGNAL["OUT_C"]      # accumulator output, for OS only
+signal = SIGNAL["SIG_PROPAG"] # propagate control register
+signal = SIGNAL["SIG_VALID"]  # valid control register
+
+# the target register id
+target = signal[0]
+
+# the total number of bits in the register
+nbits = signal[1]
+
+# Select a PE position
+pe_row = random.randint(0, conf.DIM-1)
+pe_col = random.randint(0, conf.DIM-1)
+
+# Select a random bit
+tgt_bit = random.randint(0, nbits-1)
+
+# prints the injected fault in the moment it's injected
+fiSilent = True 
 
 # Add the fault before streaming the inputs
-gemmini_os.add_transient_fault(target, pe_row, pe_col, bit, 0, fiSilent) 
+gemmini_os.add_transient_fault(target, pe_row, pe_col, tgt_bit, 0, fiSilent) 
 
 # Stream the inputs...
 ```

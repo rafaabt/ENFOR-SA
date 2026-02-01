@@ -303,12 +303,12 @@ SIGNAL = {
     # data signals  - PE inputs
     "IN_A":  (IN_A, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
     "IN_B":  (IN_B, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
-    "IN_D":  (IN_D, PE_OUT_BITS),  
+    "IN_D":  (IN_D, PE_OUT_BITS), # input D
     
     # data signals - PE outputs
-    "OUT_A": (OUT_A, PE_IN_BITS),  # this was added much latter. do not change the ids to keep compatibility with the fault lists...
-    "OUT_B": (OUT_B, PE_OUT_BITS), # check if this just passes in_b through the PE (OS), or for WS maybe it passes the partial sums
-    "OUT_C": (OUT_C, PE_OUT_BITS), # the C2 register
+    "OUT_A": (OUT_A, PE_IN_BITS),  
+    "OUT_B": (OUT_B, PE_OUT_BITS), 
+    "OUT_C": (OUT_C, PE_OUT_BITS),
 
     # data signals - each PE has two registers to store: 1. accumulators in OS, or 2. weights in WS - in each case, only one reg. is actually used
     "C1":   (C1, PE_OUT_BITS),

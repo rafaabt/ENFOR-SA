@@ -238,7 +238,7 @@ class TesterGemmini(unittest.TestCase):
         faulty_outputs = 0
 
         for key, sig_id_bits_tuple in TARGET_SIGNALS.items():  
-            target   = sig_id_bits_tuple[0]
+            target = sig_id_bits_tuple[0]
             bits = sig_id_bits_tuple[1]
 
             for i in range(nTrials):

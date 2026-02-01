@@ -1,10 +1,7 @@
-import torch
-
 #
 # Full path to the ImageNet dataset
 #
 PATH_IMAGENET='~/ImageNet/'
-
 
 
 """
