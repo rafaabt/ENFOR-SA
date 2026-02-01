@@ -82,7 +82,7 @@ If desired, fault injection can be performed in specific targets by filtering th
 
 **Directions:** Target filters can be customized in the file [`pytorch/src/flist/fi_target.py`](pytorch/src/flist/fi_target.py). To inject only a given target type, configure the global dictionary `fault_target` with the desired filters, as shown in the examples provided in the same file.
 
-### Run the experiment:
+### Run the experiment
 1. All experiments must run from the `pytorch` folder: `cd pytorch`;
 2. In the file `pytorch/src/definitions.py`: Set your ImageNet path in `PATH_IMAGENET`;
 3. In the `run.sh` script: select the desired models and layers to inject;
@@ -92,9 +92,7 @@ If desired, fault injection can be performed in specific targets by filtering th
 
 The experiment results are logged in `pytorch/reports`. Two types of report files are generated: the `batch` folder summarizes per-batch data (e.g., total number of critical faults per batch per injected layer). The `trace` folder logs data for each individual injected fault and input.
 
-
 ### Example of trace file for RTL injections
-
 The table below shows an example of a trace file generated for RTL injections. The file stores the full fault position: the injected layer, tile position offloaded to the array, target PE, the type of register (inputs, outputs or control) injected in the PE (column “target”) and target bit. 
 
 The main classification effects of the fault is shown in columns sdc1 and sdc5. 
@@ -106,7 +104,7 @@ The “sdc1” flag is asserted if the fault caused the Top-1 classification lab
 | 49673 | 7 | 1 | 2 | 44 | 1 | 3 | 7 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 0.00 | 0.00 |
 | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
 
-Check the examples [here](pytorch/reports/README.md) on how to read the trace files.
+Check the examples [here](pytorch/reports/README.md) on how to process the trace files.
 
 ## Porting new configurations
 To port new Gemmini configurations, check the documentation [here](rtl/README.md).
@@ -115,5 +113,16 @@ To port new Gemmini configurations, check the documentation [here](rtl/README.md
 The API to connect PyTorch with the verilated Gemmini modules can be checked [here](pytorch/src/gemmini/README.md).
 
 ## Citation
-
 To cite this work:
+```
+@inproceedings{Tonetto2026ENFORSA,
+  author    = {Rafael Billig Tonetto and Marcello Traiola and Fernando Fernandes and Angeliki Kritikakou},
+  title     = {ENFOR-SA: End-to-end Cross-layer Transient Fault Injector for Efficient and Accurate DNN Reliability Assessment on Systolic Arrays},
+  booktitle = {Proceedings of the IEEE VLSI Test Symposium (VTS)},
+  year      = {2026},
+  month     = apr,
+  address   = {Napa Valley, CA, United States},
+  note      = {HAL Id: hal-05487559},
+  url       = {https://hal.science/hal-05487559v1},
+}
+```

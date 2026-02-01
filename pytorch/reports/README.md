@@ -1,3 +1,5 @@
+## Reading report files
+
 This directory contains all fault injection report files. See the example below on how to proces a trace file.
 
 ```
@@ -22,12 +24,11 @@ critical_list = df_critical["fault_tag"].unique().tolist()
 # The fraction of injections masked during the Gemmini matmul
 len(df_gemm_msk)/injections
 
-# The number of injections exposed to the the layer output, to the SW
+# The number of injections exposed to the the output layer, in the SW level
 count = (
     (df_full['gemm_msk']  == 0) &
     (df_full['scale_msk'] == 0) &
     (df_full['round_msk'] == 0) &
     (df_full['clamp_msk'] == 0)
 ).sum()
-
 ```

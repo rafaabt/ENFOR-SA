@@ -1,7 +1,6 @@
 ## Basic Gemmini API definitions
 Using Gemmini modules from PyTorch calls can be trivially done using the simple API described in the snippets below. The core idea is to interface PyTorch with verilated models in C++ by using [C++ extensions for PyTorch]("https://docs.pytorch.org/docs/stable/cpp_extension.html"). PyTorch channels function calls to the verilated Gemmmini models through a binding interface (C++ extensions with pybind11) defined in [`pytorch/src/gemmini/cpp/gemmini_interface.cpp`](cpp/gemmini_interface.cpp). 
 
-
 ### Example on how to use the API for matmuls
 To do so, one needs to first load the Gemmini module by specifying a given config. After this, just feed input tensors through the API and read back the resulting matmul. Examples are provided below:
 
@@ -21,7 +20,6 @@ gemmini_ws = ext.load_extension("WSDIM8")
 ```
 
 The `ext.load_extension(<>)` function call expects a configuration key as parameter. Check all available keys in [pytorch/src/gemmini/gemmini_config.py](gemmini_config.py)
-
 
 Generate some random inputs:
 ```

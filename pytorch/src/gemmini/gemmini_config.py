@@ -274,32 +274,52 @@ enum {
     IDX_propagate, // 5 - propagate ctrl signals to assert in_b and in_d pins (flows top->bottom)
     IDX_valid,     // 6 - valid signals to assert in_b and in_d pins (flows top->bottom)
     IDX_io_out_a   // 7
-    IDX_c1,        // 8 - the c1/c2 registers holding preloaded values
+    IDX_c1,        // 8 - the c1/c2 registers holding preloaded values - check PE.scala to understand this better
     IDX_c2         // 9
 };
-
-
-check PE.scala to understand this better
-
 """
 
-# map in the form <signal name>: (<enum index value as shown above>, <number of bits for injection in the signal>)
-SIGNAL = {
-    # data signals
-    "IN_A":  (0, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
-    "IN_B":  (1, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
-    "IN_D":  (2, PE_OUT_BITS),  
-    
-    "OUT_A": (7, PE_IN_BITS),  # this was added much latter. do not change the ids to keep compatibility with the fault lists...
-    "OUT_B": (3, PE_OUT_BITS), # check if this just passes in_b through the PE (OS), or for WS maybe it passes the partial sums
-    "OUT_C": (4, PE_OUT_BITS), # the C2 register
+IN_A=0
+IN_B=1
+IN_D=2
 
-    "C1":   (8, PE_OUT_BITS),
-    "C2":   (9, PE_OUT_BITS),
+OUT_A=7
+OUT_B=3
+OUT_C=4
+
+C1=8
+C2=9
+
+SIG_PROPAG=5
+SIG_VALID=6
+
+PE_IN_BITS = 8
+PE_OUT_BITS = 32
+
+#
+# Maps in the form <signal name>: (<enum index value as shown above>, <number of bits for injection in the signal>)
+#
+SIGNAL = {
+    # data signals  - PE inputs
+    "IN_A":  (IN_A, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
+    "IN_B":  (IN_B, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
+    "IN_D":  (IN_D, PE_OUT_BITS),  
+    
+    # data signals - PE outputs
+    "OUT_A": (OUT_A, PE_IN_BITS),  # this was added much latter. do not change the ids to keep compatibility with the fault lists...
+    "OUT_B": (OUT_B, PE_OUT_BITS), # check if this just passes in_b through the PE (OS), or for WS maybe it passes the partial sums
+    "OUT_C": (OUT_C, PE_OUT_BITS), # the C2 register
+
+    # data signals - each PE has two registers to store: 1. accumulators in OS, or 2. weights in WS - in each case, only one reg. is actually used
+    "C1":   (C1, PE_OUT_BITS),
+    "C2":   (C2, PE_OUT_BITS),
 
     # control signals
-    "SIG_PROPAG":   (5, 1),
-    "SIG_VALID":    (6, 1),
+    "SIG_PROPAG":   (SIG_PROPAG, 1),
+    "SIG_VALID":    (SIG_VALID,  1),
 }
+
+#TARGETS_IDS  = [t[0] for t in SIGNAL.values()]
+#TARGETS_BITS = [t[1] for t in SIGNAL.values()]
 
 

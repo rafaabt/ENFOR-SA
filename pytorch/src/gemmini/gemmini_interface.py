@@ -1,7 +1,6 @@
 import torch
 import random
 import time
-
 from typing import Optional
 
 from src.gemmini import gemmini_config as conf

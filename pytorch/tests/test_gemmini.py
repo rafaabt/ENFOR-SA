@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import src.gemmini.gemmini_extension_definitions as ext
 import src.gemmini.gemmini_config as conf
+from src.gemmini.gemmini_config import *
 import src.definitions as defs
 
 
@@ -212,25 +213,27 @@ class TesterGemmini(unittest.TestCase):
                 The registers taking the in_d inputs are only vulnerable during preloads, whose value are then stored in c1. you can target the c1 register during stream
                 WS: no effects, because the D matrix is fed to the in_b pins. the in_d pins were already used in preloads. injecting faults during stream will affect c1 (preloads stored in c2)
         """
-
         TARGET_SIGNALS = {
-            # data signals
-            "IN_A":  (0, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
-            "IN_B":  (1, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
-
-            #"IN_D":  (2, PE_OUT_BITS), # should not have any effects as faults are not injected during preloads
+            # data signals  - PE inputs
+            "IN_A":  (IN_A, PE_IN_BITS),  # input A signal id is 0, with PE_IN_BITS bits
+            "IN_B":  (IN_B, PE_IN_BITS),  # input B signal id is 1, with PE_IN_BITS bits
+            #"IN_D":  (IN_D, PE_OUT_BITS), # should not have any effects as faults are not injected during preloads
             
-            #"OUT_A": (7, PE_IN_BITS),
-            #"OUT_B": (3, PE_OUT_BITS),  # WS: this would be the partial sum flowing downstream
-            #"OUT_C": (4, PE_OUT_BITS),  # WS: no effect. the outputs are streamed through out_b. OS: affects the accumulators
+            # data signals - PE outputs
+            #"OUT_A": (OUT_A, PE_IN_BITS),
+            #"OUT_B": (OUT_B, PE_OUT_BITS),  # WS: this would be the partial sum flowing downstream
+            #"OUT_C": (OUT_C, PE_OUT_BITS),  # WS: no effect. the outputs are streamed through out_b. OS: affects the accumulators
 
-            #"C1":   (8, PE_OUT_BITS), # OS: faults (must use WILL_PE_INPUT_BE_ASSIGNED so the fault is not overwritten) WS: no faults (preloaded in C2)
-            #"C2":   (9, PE_OUT_BITS), # OS: no faults (preloaded in C1)  WS: yes faults
+            # data signals - each PE has two registers to store: 1. accumulators in OS, or 2. weights in WS - in each case, only one reg. is actually used
+            #"C1":   (C1, PE_OUT_BITS), # OS: faults (must use WILL_PE_INPUT_BE_ASSIGNED so the fault is not overwritten) WS: no faults (preloaded in C2)
+            #"C2":   (C2, PE_OUT_BITS), # OS: no faults (preloaded in C1)  WS: yes faults
 
             # control signals
-            #"SIG_PROPAG":   (5, 1),
-            #"SIG_VALID":    (6, 1),
+            #"SIG_PROPAG":   (SIG_PROPAG, 1),
+            #"SIG_VALID":    (SIG_VALID, 1),
         }
+
+
 
         faulty_outputs = 0
 

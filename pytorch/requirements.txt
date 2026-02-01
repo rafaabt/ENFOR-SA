@@ -5,8 +5,6 @@ anytree
 numpy
 tqdm
 matplotlib
-seaborn
 pandas
 tabulate
-scikit-learn
 timm

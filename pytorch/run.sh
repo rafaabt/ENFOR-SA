@@ -11,13 +11,12 @@ models=(
         #"Inception_V3"
         #"ShuffleNet_V2_X0_5"
         #"ShuffleNet_V2_X2_0"
-        "deit_tiny"
+        #"deit_tiny"
         #"deit_small"
         #"deit_base"
       )
 
-#ResNet18_target_layers=(0 1 2 10 11 12 17 18 19)
-ResNet18_target_layers=(0)
+ResNet18_target_layers=(0 1 2 10 11 12 17 18 19)
 ResNet50_target_layers=(0 1 2 5 10 15 20 25 30 35 40 45 50 51 52)
 ResNeXt101_32X8D_target_layers=(0 1 2 20 30 40 50 60 70 80 90 101 102 103)
 ResNeXt101_64X4D_target_layers=(0 1 2 20 30 40 50 60 70 80 90 101 102 103)
