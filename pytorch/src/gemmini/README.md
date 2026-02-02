@@ -6,6 +6,7 @@ To do so, one needs to first load the Gemmini module by specifying a given confi
 
 Import the extension modules:
 ```
+import torch
 import src.gemmini.gemmini_extension_definitions as ext
 import src.gemmini.gemmini_config as conf
 ```
@@ -17,6 +18,12 @@ gemmini_os = ext.load_extension("OSDIM8")
 
 # Example of WS mode, DIM 8×8
 gemmini_ws = ext.load_extension("WSDIM8")
+
+gemmini_os.init()
+gemmini_ws.init()
+
+gemmini_os.print_info()
+gemmini_ws.print_info()
 ```
 
 The `ext.load_extension(<>)` function call expects a configuration key as parameter. Check all available keys in [pytorch/src/gemmini/gemmini_config.py](gemmini_config.py)
@@ -24,10 +31,10 @@ The `ext.load_extension(<>)` function call expects a configuration key as parame
 Generate some random inputs:
 ```
 # The dimensions must match the size of the array
-A = torch.randint(-128, 127, (conf.DIM, conf.DIM))
-B = torch.randint(-128, 127, (conf.DIM, conf.DIM))
-D = torch.randint(-128, 127, (conf.DIM, conf.DIM))
-C = torch.zeros((DIM, DIM), dtype=conf.OUTPUT_TYPE)
+A = torch.randint(-128, 127, (conf.DIM, conf.DIM), dtype=conf.GEMM_INPUT_DTYPE)
+B = torch.randint(-128, 127, (conf.DIM, conf.DIM), dtype=conf.GEMM_INPUT_DTYPE)
+D = torch.randint(-128, 127, (conf.DIM, conf.DIM), dtype=conf.GEMM_OUTPUT_DTYPE)
+C = torch.zeros((conf.DIM, conf.DIM), dtype=conf.GEMM_OUTPUT_DTYPE)
 ```
 
 Compute C = A×B + D with the OS mode:
@@ -44,14 +51,18 @@ steps_flu = gemmini_os.flush_gemm(C, False)
 
 Compute C = A×B + D with the WS mode:
 ```
-gemmini_ws = ext.load_extension("WSDIM8")
-
 # Preloads the B matrix
 steps_pre = gemmini_ws.preload(B)
 
 # Streams the A and D inputs
 steps_mul = gemmini_ws.stream(A, C) # use this if D is zero
 steps_mul = gemmini_ws.stream_bias(A, D, C) # use this D is not zero
+```
+
+Free the RTL modules and interfaces
+```
+gemmini_os.finish()
+gemmini_ws.finish()
 ```
 
 ### Adding transient faults
