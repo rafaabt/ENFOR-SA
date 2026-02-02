@@ -13,42 +13,41 @@
 
 #define LOOP(iii,N) for (uint32_t iii = 0; iii < N; iii++)
 
-#define RESET2   "\033[0m"  // gemmini.h tem um valor chamado RESET
-#define BLACK   "\033[30m"      /* Black */
-#define RED     "\033[31m"      /* Red */
-#define GREEN   "\033[32m"      /* Green */
-#define YELLOW  "\033[33m"      /* Yellow */
-#define BLUE    "\033[34m"      /* Blue */
-#define MAGENTA "\033[35m"      /* Magenta */
-#define CYAN    "\033[36m"      /* Cyan */
-#define WHITE   "\033[37m"      /* White */
-
-#define BRIGHT_BLACK "\033[90m"
-#define BOLDBLACK    "\033[1m\033[30m"      /* Bold Black */
-#define BOLDRED      "\033[1m\033[31m"      /* Bold Red */
-#define BOLDGREEN    "\033[1m\033[32m"      /* Bold Green */
-#define BOLDYELLOW   "\033[1m\033[33m"      /* Bold Yellow */
-#define BOLDBLUE     "\033[1m\033[34m"      /* Bold Blue */
-#define BOLDMAGENTA  "\033[1m\033[35m"      /* Bold Magenta */
-#define BOLDCYAN     "\033[1m\033[36m"      /* Bold Cyan */
-#define BOLDWHITE    "\033[1m\033[37m"      /* Bold White */
-
-#define UNDERLINE "\033[4m"
-#define BLINK     "\033[6m"
-#define BOLD      "\033[1m"
-#define ITALIC    "\033[3m"
+#define RESET "\033[0m"
+#define BLACK "\033[30m"
+#define RED   "\033[31m"
+#define GREEN "\033[32m"
+#define BLUE  "\033[34m"
 
 
+static char bits[256] =
+{
+      0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,  /* 0   - 15  */
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  /* 16  - 31  */
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  /* 32  - 47  */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 48  - 63  */
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  /* 64  - 79  */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 80  - 95  */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 96  - 111 */
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  /* 112 - 127 */
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  /* 128 - 143 */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 144 - 159 */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 160 - 175 */
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  /* 176 - 191 */
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  /* 192 - 207 */
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  /* 208 - 223 */
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  /* 224 - 239 */
+      4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8   /* 240 - 255 */
+};
 
 
-
-// \033[<style>;<foreground>;<background>m
-// colors in https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
-
-// #define HEADER "\33[1;3;36;44m"  // bold + italic + green text + blue bg
-
-#define HEADER "\33[30m" "\33[104m"   
-                 // fg         bg 
+uint32_t popcount(int x)
+{
+    return bits[ (int) (x & 0x000000FFUL) >> 0  ] +
+           bits[ (int)((x & 0x0000FF00UL) >> 8) ] +
+           bits[ (int)((x & 0x00FF0000UL) >> 16)] +
+           bits[ (int)((x & 0xFF000000UL) >> 24)];
+}
 
 
 uint8_t numPlaces (int n)

@@ -47,9 +47,6 @@
 */
 
 
-/* Any name for the Gemmini configuration (log files are named after this name) */
-#define GEMMINI_CONFIG_NAME GEMM_CONFIG_ALIAS // this is defined in config.h
-
 /* The main matmul solver on top of Gemmini */
 MxM *mxm = nullptr;
 
@@ -69,7 +66,7 @@ int init()
         return 0;
     }
 
-    if ((gemmini = new Gemmini(dut, GEMMINI_CONFIG_NAME)) == nullptr)
+    if ((gemmini = new Gemmini(dut, GEMM_CONFIG_ALIAS)) == nullptr)
     {
         printf("[C++ extension Failed] init() err: gemmini\n");
         return 0;
@@ -82,62 +79,15 @@ int init()
         return 0;
     }
 
-    //std::cout << RED << "[C++ extension]: Gemmini config: " << GEMMINI_CONFIG_NAME << RESET2 <<  std::endl;
+    //std::cout << RED << "[C++ extension]: Gemmini config: " << GEMM_CONFIG_ALIAS << RESET <<  std::endl;
 
     return 1;
 }
 
+
 void finish()
 {
     delete mxm;
-}
-
-
-const char* get_config_name()
-{
-    return (const char*)GEMMINI_CONFIG_NAME;
-}
-
-
-void print_info()
-{
-    //std::cout << BLUE;
-    std::cout << "- Gemmini config  : " << GEMMINI_CONFIG_NAME << std::endl;
-    
-    #ifdef GEMM_OS
-        std::cout << "- Gemmini mode    : OS\n";
-    #else
-        std::cout << "- Gemmini mode    : WS\n";
-    #endif
-
-    std::cout << "- Gemmini DIM     : " << DIM << std::endl;
-    std::cout << "- Verilated module: " << CONFIG_NAME << std::endl;
-
-    #ifdef USE_GL_INJECTION
-        std::cout << "- Fault level     : Gates\n";
-    #else
-        std::cout << "- Fault level     : RTL\n";
-    #endif
-
-    #ifdef ENABLE_PERMANENT_FAULTS
-        std::cout << "- ENABLE_PERMANENT_FAULTS: ON\n";
-    #else
-        std::cout << "- ENABLE_PERMANENT_FAULTS: OFF\n";
-    #endif
-
-    std::cout << RESET2 << std::endl;
-}
-
-
-uint32_t reset()
-{
-    return mxm->reset();
-}
-
-
-void tick_test_perf(size_t trials)
-{
-    mxm->tick_test_perf(trials);
 }
 
 
@@ -152,6 +102,7 @@ uint32_t preload(const torch::Tensor& tensor)
     
     assert(tensor.dim() == 2 && tensor.size(0) == DIM && tensor.size(1) == DIM);
 
+    // Get pointers to the data
     Output_t* data_ptr = tensor.data_ptr<Output_t>();
 
 #ifdef GEMM_OS
@@ -163,12 +114,13 @@ uint32_t preload(const torch::Tensor& tensor)
 }
 
  
-#ifdef GEMM_OS // flush() is only for OS mode
+#ifdef GEMM_OS
 /* Flushes the Gemmini PE state to the tensor (OS mode only) */
 uint32_t flush_gemm(torch::Tensor& tensor, bool transpose_output)
 {
     assert(tensor.dim() == 2 && tensor.size(0) == DIM && tensor.size(1) == DIM);
-
+    
+    // Get pointers to the data
     Output_t* data_ptr = tensor.data_ptr<Output_t>();
     auto* mat = reinterpret_cast<Output_t (*)[DIM]>(data_ptr);
     return mxm->flush(mat, transpose_output);
@@ -260,6 +212,53 @@ void clear_fault_list()
 }
 
 
+const char* get_config_name()
+{
+    return (const char*)GEMM_CONFIG_ALIAS;
+}
+
+
+uint32_t reset()
+{
+    return mxm->reset();
+}
+
+
+void tick_test_perf(size_t trials)
+{
+    mxm->tick_test_perf(trials);
+}
+
+
+void print_info()
+{
+    std::cout << "- Gemmini config  : " << GEMM_CONFIG_ALIAS << std::endl;
+    
+    #ifdef GEMM_OS
+        std::cout << "- Gemmini mode    : OS\n";
+    #else
+        std::cout << "- Gemmini mode    : WS\n";
+    #endif
+
+    std::cout << "- Gemmini DIM     : " << DIM << std::endl;
+    std::cout << "- Verilated module: " << CONFIG_NAME << std::endl;
+
+    #ifdef USE_GL_INJECTION
+        std::cout << "- Fault level     : Gates\n";
+    #else
+        std::cout << "- Fault level     : RTL\n";
+    #endif
+
+    #ifdef ENABLE_PERMANENT_FAULTS
+        std::cout << "- ENABLE_PERMANENT_FAULTS: ON\n";
+    #else
+        std::cout << "- ENABLE_PERMANENT_FAULTS: OFF\n";
+    #endif
+
+    std::cout << RESET << std::endl;
+}
+
+
 #if 0
 /* This sets a value 'val' to a chosen Gemmini signal in a chosen row of a cluster */
 int set_signal (int cluster, int row, int val)
@@ -282,26 +281,23 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
     m.def("init", &init, "Custom C++ function");
     m.def("reset", &reset, "Custom C++ function");
+    m.def("stream", &stream, "Custom C++ function");
     m.def("finish", &finish, "Custom C++ function");
     m.def("preload", &preload, "Custom C++ function");
     m.def("print_info", &print_info, "Custom C++ function");
     m.def("tick_test_perf", &tick_test_perf, "Custom C++ function");
+    m.def("get_config_name", &get_config_name, "Custom C++ function");
     m.def("clear_fault_list", &clear_fault_list, "Custom C++ function");
     m.def("add_transient_fault", &add_transient_fault, "Custom C++ function");
     m.def("add_permanent_fault", &add_permanent_fault, "Custom C++ function");
 
+#ifdef GEMM_OS
+    m.def("flush_gemm", &flush_gemm, "Custom C++ function");
+#else // GEMM_WS
+    m.def("stream_bias", &stream_bias, "Custom C++ function");
+#endif
+
     //m.def("set_signal", &set_signal, "Custom C++ function");
     //m.def("get_signal", &get_signal, "Custom C++ function");
 
-    m.def("get_config_name", &get_config_name, "Custom C++ function");
-
-#ifdef GEMM_OS
-    m.def("flush_gemm", &flush_gemm, "Custom C++ function");
-#endif
-
-    m.def("stream", &stream, "Custom C++ function");
-
-#if GEMM_WS
-    m.def("stream_bias", &stream_bias, "Custom C++ function");
-#endif
 }

@@ -10,11 +10,7 @@ static bool test_case_2();
 static bool test_case_3();
 static bool test_case_4();
 static bool test_performance();
-static bool test_mesh_netlist_gl_perf();
 
-#ifdef USE_GL_INJECTION
-static bool test_gl_mac();
-#endif
 
 
 /* Standard inputs the same size as the Gemmini grid */
@@ -38,15 +34,9 @@ int main (int argc, char** argv)
 
 #define TEST_CASES 4
 
-#if 1
-    //bool (*test_cases[])(void) = {test_performance};
-
-    //bool (*test_cases[])(void) = {test_case_4}; 
-    //bool (*test_cases[])(void) = {test_case_1}; 
-
     bool (*test_cases[])(void) = {test_case_1, test_case_2, test_case_3, test_case_4};
 
-    bool passed[TEST_CASES] = {0};//, 0, 0};
+    bool passed[TEST_CASES] = {0, 0, 0, 0};
     uint32_t count_passed = 0;
 
     for(uint32_t i = 0; i < TEST_CASES; i++)
@@ -61,48 +51,12 @@ int main (int argc, char** argv)
             printf("Test %u: %sPassed\n", i, GREEN); 
         else
             printf("Test %u: %sFailed\n", i, RED);
-        printf(RESET2);
+        printf(RESET);
     }
 
     printf("Passed tests: %u\n", count_passed);
 
-#else
-    //bool passed = test_case_1();
-    bool passed = test_performance();
-
-    if(passed)
-        printf("Test: %sPassed\n", GREEN); 
-    else
-        printf("Test: %sFailed\n", RED);
-    printf(RESET2);
-
-#endif
-
     return 0;
-}
-
-
-static bool test_mesh_netlist_gl_perf()
-{
-    VL_DUT *dut = new VL_DUT();
-    //MAC_DUT *mac = new MAC_DUT();
-
-    size_t trials = 10000;
-
-    for (size_t i = 0; i < trials; i++)
-    {
-        dut->CLK = 0; 
-        dut->eval();
-
-
-        /* Rising edge */
-        dut->CLK = 1;
-        dut->eval();
-    }
-
-    printf("Finished after %lu trials\n", trials);
-
-    return true;
 }
 
 
@@ -122,7 +76,7 @@ static bool test_case_1()
 
     uint32_t failures = 0;
 
-#define II 200 //000
+#define II 200
 
     for (uint32_t i = 0; i < II; i++)
     {
@@ -276,7 +230,7 @@ static bool test_case_3() // OS only - this only tests preloads + flush only
     uint32_t itersFlush;
     uint32_t failures = 0;
 
-#define TRIALS 1
+#define TRIALS 10
 
     for(int i = 0; i < TRIALS; i++)
     {
@@ -319,7 +273,6 @@ static bool test_case_4()
 
     MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
 
-#if 1
     if(simOpt.faulty) 
     {
         if(simOpt.faultModel == (int)FaultModel::FM_TRANSIENT)
@@ -334,7 +287,6 @@ static bool test_case_4()
             exit(0);
         }
     }
-#endif
 
     // disable this to test hdfit models
     //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false); // IDX_io_out_c IDX_io_in_b
@@ -376,7 +328,6 @@ static bool test_case_4()
 {
     MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
 
-#if 1
     if(simOpt.faulty)
     {
         if(simOpt.faultModel == (int)FaultModel::FM_TRANSIENT)
@@ -391,8 +342,6 @@ static bool test_case_4()
             exit(0);
         }
     }
-
-#endif
 
     uint32_t itersPre;
     uint32_t itersMul;  
@@ -499,92 +448,5 @@ static bool test_performance()
     return 1;
 }
 
-
-#ifdef USE_GL_INJECTION
-
-#define FIRST_TARGET_ID 2    // First one is assign _0056_[16] =( io_in_a[8] & io_in_b[8]) ^ ((fiEnable && (2 == GlobalFiNumber)) ? GlobalFiSignal[0] : {1{1'b0}});
-#define LAST_TARGET_ID  3419 // Last one is assign _0184_[0] =( _0182_[0]) ^ ((fiEnable && (3419 == GlobalFiNumber)) ? GlobalFiSignal[0] : {1{1'b0}});
-
-static bool test_gl_mac()
-{
-    printf("Running test case: %s\n", __FUNCTION__);
-    
-    srand(time(NULL));
-
-    MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
-
-#if 0
-    MAC_UNIT *mac = new MAC_UNIT();
-
-    mac->io_in_a = 3;
-    mac->io_in_b = 4;
-    mac->io_in_c = 6;
-
-    int gold = mac->io_in_a*mac->io_in_b + mac->io_in_c;
-    mac->eval();
-
-    if (mac->io_out_d != gold)
-        printf("err %d != %d\n", mac->io_out_d, gold);
-
-    else
-        printf("ok: %d\n", mac->io_out_d);
-
-    exit(0);
-#endif
-
-#if 1
-    if(simOpt.faulty) 
-    {
-        int cell = MatUtils::random_int(FIRST_TARGET_ID, LAST_TARGET_ID);
-
-        if(simOpt.faultModel == (int)FaultModel::FM_TRANSIENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, cell, false);  // IDX_io_in_a IDX_io_in_b IDX_io_out_c IDX_valid IDX_propagate
-        
-        else if(simOpt.faultModel == (int)FaultModel::FM_PERMANENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_PERMANENT, IDX_io_in_b, simOpt.peRow, simOpt.peCol, 0, cell, 1);
-        
-        else
-        {
-            printf("[Err]: invalid fault model\n");
-            exit(0);
-        }
-    }
-#endif
-
-    // disable this to test hdfit models
-    //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false); // IDX_io_out_c IDX_io_in_b
-
-    uint32_t itersPre;
-    uint32_t itersMul;  
-    uint32_t itersFlush;
-
-    for (int i = 0; i < 1; i++)
-    {
-        MatUtils::loadRand<Input_t,DIM,DIM>(A);
-        MatUtils::loadRand<Input_t,DIM,DIM>(B);
-        MatUtils::loadRand<Input_t,DIM,DIM>(D);
-
-        MatUtils::matmul<Input_t,Output_t,DIM,DIM,DIM>(A, B, D, Cgold);
-        //MatUtils::matmul<Input_t,Output_t,DIM,DIM,DIM>(A, B, Cgold);
-
-        //MatUtils::print<Input_t,DIM,DIM>(A);
-        //MatUtils::print<Input_t,DIM,DIM>(B);
-
-        itersPre = mxm->preload(D);
-        itersMul = mxm->stream(A, B);
-        itersFlush = mxm->flush(C);
-
-        if (!MatUtils::compare<Output_t,DIM,DIM>(C, Cgold))
-        {
-            printf("Error: matmul mismatch\n");
-            MatUtils::debugPrint<Output_t,DIM,DIM>(Cgold,C);
-            delete mxm;
-            return false;
-        }
-    }
-    delete mxm;
-    return true;
-}
-#endif // #ifdef USE_GL_INJECTION
 
 #endif // #ifdef GEMM_OS

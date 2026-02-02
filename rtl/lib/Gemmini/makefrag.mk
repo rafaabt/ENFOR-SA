@@ -1,17 +1,6 @@
 #
-# The lib name (.so)
-#
-
-LIBNAME=any
-#LIBNAME=confia
-#LIBNAME=hdfit
-#LIBNAME=mxm_gemm_ws_dim_4
-#LIBNAME=mxm_gemm_os_dim_8_32
-
-#
 # OS CONFIGS
 #
-
 #CONFIG=CustomGemminiOSTinySoCConfig
 CONFIG=CustomGemminiOSMediumSoCConfig
 #CONFIG=CustomGemminiOSBigSoCConfig
