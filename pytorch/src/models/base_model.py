@@ -1,5 +1,6 @@
 import torch
 import time
+import os
 import warnings
 
 from collections import defaultdict
@@ -14,7 +15,6 @@ from src import definitions as defs
 
 warnings.filterwarnings("ignore", message="TypedStorage is deprecated")
 warnings.filterwarnings("ignore", message="must run observer before calling calculate_qparams")
-
 
 
 # encapsulates a base dnn model ands provides basic model inference and tensor manipulation facilities
@@ -63,6 +63,10 @@ class BaseModel(torch.nn.Module):
             
         if not cp_file:
             cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
+
+            # if the cp is not available, keep the previously loaded state 
+            if not os.path.isfile(cp_file):
+                return
 
         current_model_dict = self.model.state_dict()
         loaded_state_dict = torch.load(cp_file, map_location=torch.device('cpu'), weights_only=True)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 models=(
-        #"ResNet18"
+        "ResNet18"
         #"ResNet50"
         #"ResNeXt101_32X8D"
         #"ResNeXt101_64X4D"
@@ -11,7 +11,7 @@ models=(
         #"Inception_V3"
         #"ShuffleNet_V2_X0_5"
         #"ShuffleNet_V2_X2_0"
-        "deit_tiny"
+        #"deit_tiny"
         #"deit_small"
         #"deit_base"
       )
