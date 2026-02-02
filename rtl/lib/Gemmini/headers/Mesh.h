@@ -333,32 +333,14 @@ void Mesh::flipBitMacOut (uint8_t f)
 void Mesh::flipBitPropagB (uint8_t f)
 {
     Fault *fault = faultList[f];
-
-    if (fault->row == 0)
-    {
-        uint32_t mask = 1U << fault->bit; 
-
-        *(Input_t*)ptr_mesh_propagate[fault->col] ^= mask;   
-    }
-
-    else
-        pe[fault->row][fault->col]->flipBitPropagB();
+    pe[fault->row][fault->col]->flipBitPropagB();
 } 
 
 
 void Mesh::flipBitValid(uint8_t f)
 {
     Fault *fault = faultList[f];
-
-    if (fault->row == 0)
-    {
-        uint32_t mask = 1U << fault->bit; 
-
-        *(Input_t*)ptr_mesh_valid[fault->col] ^= mask;   
-    }
-    
-    else
-        pe[fault->row][fault->col]->flipBitValid();
+    pe[fault->row][fault->col]->flipBitValid();
 }
 
 

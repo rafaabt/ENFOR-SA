@@ -229,11 +229,9 @@ class TesterGemmini(unittest.TestCase):
             #"C2":   (C2, PE_OUT_BITS), # OS: no faults (preloaded in C1)  WS: yes faults
 
             # control signals
-            #"SIG_PROPAG":   (SIG_PROPAG, 1),
-            #"SIG_VALID":    (SIG_VALID, 1),
+            "SIG_PROPAG": (SIG_PROPAG, 1),
+            "SIG_VALID":  (SIG_VALID, 1),
         }
-
-
 
         faulty_outputs = 0
 

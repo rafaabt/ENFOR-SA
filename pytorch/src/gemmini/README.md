@@ -120,6 +120,47 @@ gemmini_os.add_transient_fault(target, pe_row, pe_col, tgt_bit, 0, fiSilent)
 
 # Stream the inputs...
 ```
+
+### Loading faults from the fault list
+Faults can be loaded directly from lists and added to the Gemmini interface as shown in the following examples.
+
+First, configure fault targets, as shown in [`pytorch/src/flist/fi_target.py`](../flist/fi_target.py), then:
+
+Import the global fault list and fault targets
+```
+from src.flist import fault_list as fl
+from src.flist import fi_target as fit
+```
+
+Setup the global fault targets ba calling
+```
+fit.setup_target()
+```
+
+Load the fault list
+```
+row_start, row_end = 0, 1000 # choose an interval to load over the full list
+fault_list = fl.load_fault_list(<some fault list>.csv, 
+                                (row_start, row_end), 
+                                filters=fit.fault_target,
+                                shuffle=False)
+```
+
+Iterate over each fault in the list
+```
+for fault in fault_list:
+    # Add the fault before streaming the inputs
+    gemmini_os.add_transient_fault(fault.gemm.target, 
+                                   fault.gemm.pe_row, 
+                                   fault.gemm.pe_col, 
+                                   fault.gemm.bit, 
+                                   0, # reserved 
+                                   fiSilent) 
+
+    # Proceed using gemmini_os for matmuls
+    ...
+```
+
 ### Tips on OS
 In OS  mode, one should reuse the outputs by keeping them in the internal PE accumulators. To do so, only flush the PE outputs when the final result is computed. For example, to compute:
 
