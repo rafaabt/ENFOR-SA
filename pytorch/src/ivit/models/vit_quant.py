@@ -454,12 +454,32 @@ def deit_tiny_patch16_224(pretrained=False, **kwargs):
         **kwargs,
     )
     if pretrained:
+        """
+        # original
         checkpoint = torch.hub.load_state_dict_from_url(
             url="https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth",
             map_location="cpu",
             check_hash=True,
         )
         model.load_state_dict(checkpoint["model"], strict=False)
+        """
+        cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
+
+        if not os.path.isfile(cp_file):
+            checkpoint = torch.hub.load_state_dict_from_url(
+                url="https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth",
+                map_location="cpu",
+                check_hash=True,
+            )
+            model.load_state_dict(checkpoint["model"], strict=False)
+
+        else:
+            #print(f"Loading state from checkpoint {cp_file}")
+            current_model_dict = model.state_dict()
+            loaded_state_dict = torch.load(cp_file, map_location=torch.device('cpu'), weights_only=True)
+            new_state_dict={k:v if v.size() == current_model_dict[k].size() else current_model_dict[k] for k,v in zip(current_model_dict.keys(), loaded_state_dict.values())}
+            model.load_state_dict(new_state_dict, strict=False)
+
     return model
 
 
@@ -475,11 +495,28 @@ def deit_small_patch16_224(pretrained=False, **kwargs):
         **kwargs
     )
     if pretrained:
+        """ # original
         checkpoint = torch.hub.load_state_dict_from_url(
             url="https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth",
             map_location="cpu", check_hash=True
         )
         model.load_state_dict(checkpoint["model"], strict=False)
+        """
+        cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
+
+        if not os.path.isfile(cp_file):
+            checkpoint = torch.hub.load_state_dict_from_url(
+                url="https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth",
+                map_location="cpu", check_hash=True
+            )
+            model.load_state_dict(checkpoint["model"], strict=False)
+
+        else:
+            #print(f"Loading state from checkpoint {cp_file}")
+            current_model_dict = model.state_dict()
+            loaded_state_dict = torch.load(cp_file, map_location=torch.device('cpu'), weights_only=True)
+            new_state_dict={k:v if v.size() == current_model_dict[k].size() else current_model_dict[k] for k,v in zip(current_model_dict.keys(), loaded_state_dict.values())}
+            model.load_state_dict(new_state_dict, strict=False)
     return model
 
 
@@ -495,11 +532,29 @@ def deit_base_patch16_224(pretrained=False, **kwargs):
         **kwargs
     )
     if pretrained:
+        """ # original
         checkpoint = torch.hub.load_state_dict_from_url(
             url="https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth",
             map_location="cpu", check_hash=True
         )
         model.load_state_dict(checkpoint["model"], strict=False)
+        """
+        cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
+
+        if not os.path.isfile(cp_file):
+            checkpoint = torch.hub.load_state_dict_from_url(
+                url="https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth",
+                map_location="cpu", check_hash=True
+            )
+            model.load_state_dict(checkpoint["model"], strict=False)
+
+        else:
+            #print(f"Loading state from checkpoint {cp_file}")
+            current_model_dict = model.state_dict()
+            loaded_state_dict = torch.load(cp_file, map_location=torch.device('cpu'), weights_only=True)
+            new_state_dict={k:v if v.size() == current_model_dict[k].size() else current_model_dict[k] for k,v in zip(current_model_dict.keys(), loaded_state_dict.values())}
+            model.load_state_dict(new_state_dict, strict=False)
+
     return model
 
 

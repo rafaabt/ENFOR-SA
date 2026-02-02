@@ -31,20 +31,11 @@ def init():
 
 
 def main():
-
     init()
 
     model_golden = BaseModel(defs.MODEL_NAME)
     model_faulty = InstrumentedModel(defs.MODEL_NAME)
     
-    # ViT models must be loaded from checkpoints
-    if defs.VIT:
-        # loads the cp for the golden mode.
-        model_golden.load_checkpoint()
-
-        # Important: for the faulty model, we loadd the checkpoint state **after** the layers are instrumented (in the InstrumentedModel constructor)
-        model_faulty.load_checkpoint()
-
     experiment = exp_seq.ExperimentSequential(model_faulty=model_faulty, 
                                               model_golden=model_golden) 
 

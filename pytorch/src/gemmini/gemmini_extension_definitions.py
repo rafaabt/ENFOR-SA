@@ -20,7 +20,6 @@ VERILATED_MODULE = 'VMesh__ALL.a'    # The Gemmini module
 #
 # MAC_MODULE="" # removed for open source
 
-
 #
 # VERILATED_PATH: The base path of the verilated designs (e.g, where verilator creates the verilated designs)
 #
@@ -30,7 +29,6 @@ VERILATED_PATH = f"{ROOT_PATH}/rtl/verilated/"
 # The verilator include path (v4.224 available in this repo)
 #
 VERILATOR_INC_PATH = f"{ROOT_PATH}/rtl/lib/verilator-include/include"
-
 
 #
 # all Gemmini config keys

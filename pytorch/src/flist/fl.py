@@ -23,6 +23,8 @@ vit_models = ["deit_tiny", "deit_small", "deit_base",
               "swin_tiny", "swin_small", "swin_base",
               "vit_base", "vit_large"]
 
+swin_models = ["swin_tiny", "swin_small", "swin_base"]
+
 #
 # load these two arg options earlier, because i need them before loading the right fault list source file 
 #
@@ -30,6 +32,10 @@ early_parser = argparse.ArgumentParser(add_help=False)
 early_parser.add_argument("-m", "--model",  type=str, default=defs.MODEL_NAME,    help="The DNN model name")
 early_parser.add_argument("-F", "--fmodel", choices=["sw", "rtl"], default="rtl", help="The fault model")
 early_args, remaining_argv = early_parser.parse_known_args()
+
+if early_args.model in swin_models:
+    print("Swin models are not supported yet!")
+    exit(0)
 
 # set the default args
 

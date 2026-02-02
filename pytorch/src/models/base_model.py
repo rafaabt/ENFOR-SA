@@ -52,30 +52,7 @@ class BaseModel(torch.nn.Module):
 
         self.time_samples_forward_pass = [] # [Debug only]: stores the execution times of the forward pass
         self.calibrate = False
-        
-
-    # Loads the model state from a checkpoint. This is used for ViT models only
-    def load_checkpoint(self, cp_file=None):
-        #print(f"Loading state from checkpoint: {cp_file}")
-
-        if not defs.VIT:
-            raise("load_checkpoint() is only applicable to ViT models")
-            
-        if not cp_file:
-            cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
-
-            # if the cp is not available, keep the previously loaded state 
-            if not os.path.isfile(cp_file):
-                return
-
-        current_model_dict = self.model.state_dict()
-        loaded_state_dict = torch.load(cp_file, map_location=torch.device('cpu'), weights_only=True)
-
-        new_state_dict={k:v if v.size() == current_model_dict[k].size() else current_model_dict[k] for k,v in zip(current_model_dict.keys(), loaded_state_dict.values())}
-        self.model.load_state_dict(new_state_dict, strict=False)
-        #self.model.load_state_dict(loaded_state_dict, strict=False)
-        #exit(0)
-
+    
 
     # every type of variable that is shared between faulty and golden models is static (i.e, BaseModel.var):
     #   ex: input batches, input batch ids, ground truth labels (these are set whenever a new golden run is performed)
