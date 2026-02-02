@@ -89,10 +89,6 @@ class TesterGemmini(unittest.TestCase):
         self.A = torch.randint(MIN_INT, MAX_INT, (DIM, DIM), dtype=torch.int)
         self.B = torch.randint(MIN_INT, MAX_INT, (DIM, DIM), dtype=torch.int)
         self.D = torch.randint(MIN_INT, MAX_INT, (DIM, DIM), dtype=torch.int)
-
-        self.Abig = torch.randint(MIN_INT, MAX_INT, (M, N), dtype=torch.int)
-        self.Bbig = torch.randint(MIN_INT, MAX_INT, (N, K), dtype=torch.int)
-        self.Dbig = torch.randint(MIN_INT, MAX_INT, (M, K), dtype=torch.int)
         """
         pass
 
@@ -101,11 +97,15 @@ class TesterGemmini(unittest.TestCase):
         pass    
 
     #@unittest.skip
-    def test_matmul_os(self):  # this is for OS only. Computes C = A1*B1 + A2*B2 + A3*B3 + A4*B4 + D 
+    def test_matmul_os(self):
         if conf.GEMM_MODE != conf.MODE_OS:
             return
 
         nFailed, nTrials = 0, 1000
+
+        """
+            Test the computation of C = A1*B1 + A2*B2 + A3*B3 + A4*B4 + D 
+        """
 
         for i in range(nTrials):
             self.D.random_(MIN_INT, MAX_INT)
@@ -132,9 +132,42 @@ class TesterGemmini(unittest.TestCase):
             steps = gemmini.stream(self.A4, self.B4) 
             steps = gemmini.flush_gemm(self.C, False)
 
-            failed = not torch.equal(C_gold, self.C)
+            nFailed += not torch.equal(C_gold, self.C)
 
-            nFailed += failed
+        fn = inspect.currentframe().f_code.co_name
+        print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
+        self.assertTrue(nFailed == 0)
+
+
+    #@unittest.skip
+    def test_matmul_ws(self):  
+        if conf.GEMM_MODE != conf.MODE_WS:
+            return
+
+        nFailed, nTrials = 0, 1000
+
+        """
+            Test the computation of
+            C1 = A1*B + D1
+            C2 = A2*B + D2
+            ...
+            Cn = An*B * Dn
+        """
+
+        n = 10
+
+        for i in range(nTrials):
+            self.B.random_(MIN_INT, MAX_INT)
+            steps_pre = gemmini.preload(self.B)
+             
+            for j in range(n): # here we always reuse weights
+                self.A.random_(MIN_INT, MAX_INT)
+                self.D.random_(MIN_INT, MAX_INT)
+
+                C_gold = torch.mm(self.A, self.B) + self.D
+                steps_mm = gemmini.stream_bias(self.A, self.D, self.C)
+
+                nFailed += not torch.equal(C_gold, self.C)
 
         fn = inspect.currentframe().f_code.co_name
         print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
@@ -156,8 +189,7 @@ class TesterGemmini(unittest.TestCase):
             steps = gemmini.preload(self.D)
             steps = gemmini.flush_gemm(self.C, False) 
 
-            failed = not torch.equal(C_gold, self.C)
-            nFailed += failed
+            nFailed += not torch.equal(C_gold, self.C)
 
         fn = inspect.currentframe().f_code.co_name
         print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
@@ -188,8 +220,7 @@ class TesterGemmini(unittest.TestCase):
                 #steps_mm  = gemmini.stream(self.A, self.C) # if D is zero
                 steps_mm  = gemmini.stream_bias(self.A, self.D, self.C)
 
-            eq = torch.equal(C_gold, self.C)
-            nFailed += int(not eq)
+            nFailed += not torch.equal(C_gold, self.C)
             
         fn = inspect.currentframe().f_code.co_name
         print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
@@ -270,7 +301,7 @@ class TesterGemmini(unittest.TestCase):
                     steps_str  = gemmini.stream_bias(self.A, self.D, self.C)
                 gemmini.clear_fault_list()
 
-                faulty_outputs += int (not torch.equal(C_gold, self.C))
+                faulty_outputs += not torch.equal(C_gold, self.C)
 
         injections = len(TARGET_SIGNALS)*nTrials
         fn = inspect.currentframe().f_code.co_name
