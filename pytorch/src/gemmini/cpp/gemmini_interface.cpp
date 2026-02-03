@@ -193,15 +193,15 @@ uint32_t stream_bias(const torch::Tensor& tA, const torch::Tensor& tD, torch::Te
    The "cluster" group specifies which input is the inject target according to the values defined in the "ClusterLoader.h" enum values 
    (Mesh.h refers to such values to create the fault injection callbacks)
 */
-void add_transient_fault (uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, uint32_t cell, bool silent)
+void add_transient_fault(uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, uint32_t cell, bool silent)
 {
-    mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, cluster, row, col, bit, cell, silent);
+    mxm->gemmini->addTransientFault(FaultModel::FM_TRANSIENT, cluster, row, col, bit, cell, silent);
 }
 
 
-void add_permanent_fault (uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, int8_t pol, uint32_t cell, bool silent)
+void add_permanent_fault(uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, int8_t pol, uint32_t cell, bool silent)
 {
-    mxm->gemmini->addFaultToList(FaultModel::FM_PERMANENT, cluster, row, col, bit, pol, cell, silent);
+    mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, cluster, row, col, bit, pol, cell, silent);
 }
 
 
@@ -249,12 +249,13 @@ void print_info()
         std::cout << "- Fault level     : RTL\n";
     #endif
 
+#if 0
     #ifdef ENABLE_PERMANENT_FAULTS
         std::cout << "- ENABLE_PERMANENT_FAULTS: ON\n";
     #else
         std::cout << "- ENABLE_PERMANENT_FAULTS: OFF\n";
     #endif
-
+#endif
     std::cout << RESET << std::endl;
 }
 

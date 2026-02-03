@@ -72,12 +72,12 @@ public:
     uint32_t preload(const Input_t M[DIM][DIM]);
 #endif
 
-    void addFaultToList(FaultModel fm, int grp, int row, int col, int bit, int cell, bool silent) // set fault attributes for transient faults
+    void addTransientFault(FaultModel fm, int grp, int row, int col, int bit, int cell, bool silent) // set fault attributes for transient faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, cell, silent));
     }
 
-    void addFaultToList(FaultModel fm, int grp, int row, int col, int bit, int pol, int cell, bool silent)  // set fault attributes for permanent faults
+    void addPermanentFault(FaultModel fm, int grp, int row, int col, int bit, int pol, int cell, bool silent)  // set fault attributes for permanent faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, pol, cell, silent));
     }
@@ -85,10 +85,10 @@ public:
     void addClientFaultToList(ClientFault fault) // used when Gemmini is used in a separate process (e.g., through main-server.cpp)
     {
         if (fault.faultModel == FM_TRANSIENT)
-            addFaultToList(FaultModel::FM_TRANSIENT, fault.target, fault.row, fault.col, fault.bit, fault.cell, fault.silent);
+            addTransientFault(FaultModel::FM_TRANSIENT, fault.target, fault.row, fault.col, fault.bit, fault.cell, fault.silent);
         
         else if (fault.faultModel == FM_PERMANENT)
-            addFaultToList(FaultModel::FM_PERMANENT, fault.target, fault.row, fault.col, fault.bit, fault.pol, fault.cell, fault.silent);
+            addPermanentFault(FaultModel::FM_PERMANENT, fault.target, fault.row, fault.col, fault.bit, fault.pol, fault.cell, fault.silent);
         
         else
              std::cerr << "[Server failed]: Invalid fault model = " << fault.faultModel << std::endl;

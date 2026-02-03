@@ -6,6 +6,7 @@
 #include <vector>
 #include "utils.h"
 #include "config.h"
+#include "FaultList.h"
 
 using namespace std;
 
@@ -50,11 +51,13 @@ public:
     void flipBitC1(uint8_t bit);
     void flipBitC2(uint8_t bit);
 
-#if ENABLE_PERMANENT_FAULTS
+#ifdef ENABLE_PERMANENT_FAULTS
     void stuckAtBitInA(uint8_t bit, uint8_t polarity);
     void stuckAtBitInB(uint8_t bit, uint8_t polarity);
-    void stuckAtBitC2(uint8_t bit, uint8_t polarity);
+    void stuckAtBitInD(uint8_t bit, uint8_t polarity);
+    void stuckAtBitOutC(uint8_t bit, uint8_t polarity);
     void stuckAtPropB(uint8_t bit, uint8_t pol);
+    void stuckAtValid(uint8_t bit, uint8_t pol);
 #endif
     
     Input_t getInputA()
@@ -147,7 +150,7 @@ void Pe::flipBitInD(uint8_t bit)
 }
 
 
-void Pe::flipBitMacOut(uint8_t bit) // Funciona de acordo com o comentado na funcao stuckAtBitC2
+void Pe::flipBitMacOut(uint8_t bit) // Funciona de acordo com o comentado na funcao stuckAtBitOutC
 {  
     uint32_t mask = 1U << bit; 
     *(Output_t*)ptr_out_c ^= mask;
@@ -196,51 +199,34 @@ void Pe::flipBitPropagB ()
 
 #define IS_MSB_BIT_0 1
 
-void Pe::stuckAtBitC2 (uint8_t bit, uint8_t polarity)
+void Pe::stuckAtBitOutC(uint8_t bit, uint8_t polarity)
 {  
 #if IS_MSB_BIT_0     // bit = 7 - bit;
     bit = 31 - bit;  // Salvo's MSB(LSB) is bit 0(7)
 #endif
 
-    uint32_t mask = 1U << bit; 
-/*
-    OS dim 4:
-    if (vlTOPp->Mesh__DOT__r_20_0) {
-            if (vlTOPp->Mesh__DOT__mesh_0_1_io_in_control_0_propagate_b)
-                vlTOPp->Mesh__DOT__mesh_0_1__DOT__tile_0_0__DOT__c2 = vlTOPp->Mesh__DOT__mesh_0_1__DOT__tile_0_0__DOT___mac_unit_io_out_d;
-            else
-                 vlTOPp->Mesh__DOT__mesh_0_1__DOT__tile_0_0__DOT__c2 = vlTOPp->Mesh__DOT____Vcellinp__mesh_0_1__io_in_d_0;
-    }
-
-    OS dim 8: -> TODO   
-        if (vlTOPp->Mesh__DOT__r_64_0) {
-        vlTOPp->Mesh__DOT__mesh_0_0__DOT__tile_0_0__DOT__c2 
-            = ((IData)(vlTOPp->Mesh__DOT__mesh_0_0_io_in_control_0_propagate_b)
-                ? vlTOPp->Mesh__DOT__mesh_0_0__DOT__tile_0_0__DOT___mac_unit_io_out_d
-                : vlTOPp->Mesh__DOT__b_64_0);
-    }
-*/
+    uint32_t mask = 1U << bit;
 
     if (polarity == 1) 
-    {
-        if (*(CData*)ptr_propagate)
-            *(Output_t*)ptr_out_b |= mask;
-         //else
-            //*(Output_t*)ptr_cellinp_in_d |= mask;
-    }
+    #ifdef GEMM_OS
+        *(Output_t*)ptr_c1 |= mask;
+    #else
+        *(Output_t*)ptr_out_b |= mask;
+    #endif
 
     else
     {
         mask = ~mask;
-        if (*(CData*)ptr_propagate)
-            *(Output_t*)ptr_out_b &= mask;
-        //else
-           // *(Output_t*)ptr_cellinp_in_d &= mask;
+    #ifdef GEMM_OS
+        *(Output_t*)ptr_c1 &= mask;
+    #else
+        *(Output_t*)ptr_out_b &= mask;
+    #endif
     }
 }
 
 
-void Pe::stuckAtBitInA (uint8_t bit, uint8_t polarity)
+void Pe::stuckAtBitInA(uint8_t bit, uint8_t polarity)
 {  
 #if IS_MSB_BIT_0     // bit = 7 - bit;
     bit = 7 - bit;  // Salvo's MSB(LSB) is bit 0(7)
@@ -259,7 +245,7 @@ void Pe::stuckAtBitInA (uint8_t bit, uint8_t polarity)
 }
 
 
-void Pe::stuckAtBitInB (uint8_t bit, uint8_t polarity)
+void Pe::stuckAtBitInB(uint8_t bit, uint8_t polarity)
 { 
 #if IS_MSB_BIT_0     // bit = 7 - bit;
     bit = 7 - bit;  // Salvo's MSB(LSB) is bit 0(7)
@@ -278,14 +264,27 @@ void Pe::stuckAtBitInB (uint8_t bit, uint8_t polarity)
 }
 
 
-void Pe::stuckAtPropB (uint8_t bit, uint8_t polarity) // ptr_propagate is propagate_b (last_s) in WS(OS) mode
-{
-    if (ptr_propagate == nullptr)
-    {
-        printf ("Err. null pointer here\n");
-        exit(0);
-    }
+void Pe::stuckAtBitInD(uint8_t bit, uint8_t polarity)
+{ 
+#if IS_MSB_BIT_0     // bit = 7 - bit;
+    bit = 7 - bit;  // Salvo's MSB(LSB) is bit 0(7)
+#endif
 
+    uint32_t mask = 1U << bit; // e.g., 00001000
+
+    if (polarity == 1)
+        *(Input_t*)ptr_in_d |= mask;
+    
+    else
+    {
+        mask = ~mask;  //e.g., 11110111
+        *(Input_t*)ptr_in_d &= mask;
+    }
+}
+
+
+void Pe::stuckAtPropB(uint8_t bit, uint8_t polarity) // ptr_propagate is propagate_b (last_s) in WS(OS) mode
+{
     uint32_t mask = 1U << bit; // e.g., 00001000
 
     if (polarity == 1)
@@ -295,6 +294,22 @@ void Pe::stuckAtPropB (uint8_t bit, uint8_t polarity) // ptr_propagate is propag
     {
         mask = ~mask;  //e.g., 11110111
          *(CData*)ptr_propagate &= mask;
+    }
+} 
+
+
+
+void Pe::stuckAtValid(uint8_t bit, uint8_t polarity) // ptr_propagate is propagate_b (last_s) in WS(OS) mode
+{
+    uint32_t mask = 1U << bit; // e.g., 00001000
+
+    if (polarity == 1)
+         *(CData*)ptr_valid |= mask;
+    
+    else
+    {
+        mask = ~mask;  //e.g., 11110111
+         *(CData*)ptr_valid &= mask;
     }
 } 
 #endif // ENABLE_PERMANENT_FAULTS

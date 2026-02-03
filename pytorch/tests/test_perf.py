@@ -16,17 +16,12 @@ import src.gemmini.gemmini_config as conf
 import src.gemmini.gemmini_interface as gemmini_interface
 
 
-#
-# gemmini: the (global) main (and only) Gemmini handler. Access to Gemmini can only be done through this interface
-#
-gemmini: gemmini_interface.Gemmini=None
-
 MIN_INT, MAX_INT = -128, 127
 INPUT_TYPE  = conf.GEMM_INPUT_DTYPE
 OUTPUT_TYPE = conf.GEMM_OUTPUT_DTYPE
 
 
-def perf_measure_resnet50_first_layer():
+def perf_measure_resnet50_first_layer(gemmini):
     # ResNet50: shape of the first conv layer
     #shape_layer = (torch.Size([64, 147]), torch.Size([147, 12544]))
 
@@ -68,7 +63,7 @@ def perf_measure_resnet50_first_layer():
     print(f"{CONFIG_KEY}: mean compute time: {mean_compute_time}\n")
 
 
-def measure_verilated_tick_time():
+def measure_verilated_tick_time(gemmini):
     print("Estimating tick times...")
     M = 1000*1000
     SIM_CYCLES = 1*M
@@ -80,7 +75,7 @@ def measure_verilated_tick_time():
     print(f"Time taken: {delta_time}\t\u03BCs per cycle:\t{usec_per_cyc}")
 
 
-def measure_matmul_rtl_performance():
+def measure_matmul_rtl_performance(gemmini):
     if conf.GEMM_MODE != conf.MODE_OS:
         return
     
@@ -146,8 +141,8 @@ if __name__ == '__main__':
         else:
             raise("Invalid Gemmini mode")
 
-        perf_measure_resnet50_first_layer()
-        measure_matmul_rtl_performance()
-        measure_verilated_tick_time()
+        perf_measure_resnet50_first_layer(gemmini)
+        measure_matmul_rtl_performance(gemmini)
+        measure_verilated_tick_time(gemmini)
 
         gemmini.finish()

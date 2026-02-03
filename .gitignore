@@ -1,5 +1,5 @@
 __pycache__/
 reports/
-bins/
+bin/
 *.bkp
 *.csv

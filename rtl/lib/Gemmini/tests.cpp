@@ -68,7 +68,6 @@ static bool test_case_1()
 
     //MxM *mxm = MxM::getInstance(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
     MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
-    //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false);
     
     uint32_t itersPre;
     uint32_t itersMul;  
@@ -131,7 +130,6 @@ static bool test_case_1()
 
     //MxM *mxm = MxM::getInstance(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
     MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
-    //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false);
     
     uint32_t itersPre;
     uint32_t itersMul;  
@@ -276,20 +274,17 @@ static bool test_case_4()
     if(simOpt.faulty) 
     {
         if(simOpt.faultModel == (int)FaultModel::FM_TRANSIENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);  // IDX_io_in_a IDX_io_in_b IDX_io_out_c IDX_valid IDX_propagate
+            mxm->gemmini->addTransientFault(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);  // IDX_io_in_a IDX_io_in_b IDX_io_out_c IDX_valid IDX_propagate
         
         else if(simOpt.faultModel == (int)FaultModel::FM_PERMANENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_PERMANENT, IDX_io_in_b, simOpt.peRow, simOpt.peCol, 0, -1, 1, false);
-        
+            mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, 0, -1, false);
+
         else
         {
             printf("[Err]: invalid fault model\n");
             exit(0);
         }
     }
-
-    // disable this to test hdfit models
-    //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false); // IDX_io_out_c IDX_io_in_b
 
     uint32_t itersPre;
     uint32_t itersMul;  
@@ -331,11 +326,11 @@ static bool test_case_4()
     if(simOpt.faulty)
     {
         if(simOpt.faultModel == (int)FaultModel::FM_TRANSIENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);
-        
-        else if(simOpt.faultModel == (int)FaultModel::FM_PERMANENT)
-            mxm->gemmini->addFaultToList(FaultModel::FM_PERMANENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);
+            mxm->gemmini->addTransientFault(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);
 
+        else if(simOpt.faultModel == (int)FaultModel::FM_PERMANENT)
+            mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, 0, -1, false);        
+ 
         else
         {
             printf("[Err]: invalid fault model\n");
@@ -380,7 +375,6 @@ static bool test_performance()
 
     //MxM *mxm = MxM::getInstance(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
     MxM *mxm = new MxM(new Gemmini(new VL_DUT, GEMM_CONFIG_ALIAS));
-    //mxm->gemmini->addFaultToList(FaultModel::FM_TRANSIENT, IDX_io_in_a, simOpt.peRow, simOpt.peCol, 0, false);
     
     uint32_t itersPre = 0;
     uint32_t itersMul = 0;  

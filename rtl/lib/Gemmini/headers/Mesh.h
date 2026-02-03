@@ -3,7 +3,6 @@
     
 #include <functional>
 #include "Pe.h"
-#include "FaultList.h"
 #include "config.h"
 #include "utils.h"
 
@@ -57,7 +56,8 @@ public:
 
         cbHoldPermanentFault[IDX_io_in_a]   = (callback_type)std::bind(&Mesh::holdPermaFaultInA,        this, std::placeholders::_1);
         cbHoldPermanentFault[IDX_io_in_b]   = (callback_type)std::bind(&Mesh::holdPermanentFaultInB,    this, std::placeholders::_1);
-        cbHoldPermanentFault[IDX_io_out_c]  = (callback_type)std::bind(&Mesh::holdPermanentFaultC2,     this, std::placeholders::_1);  // using index IDX_io_out_c for C2
+        cbHoldPermanentFault[IDX_io_in_d]   = (callback_type)std::bind(&Mesh::holdPermanentFaultInD,    this, std::placeholders::_1);
+        cbHoldPermanentFault[IDX_io_out_c]  = (callback_type)std::bind(&Mesh::holdPermanentFaultOutC,   this, std::placeholders::_1);
         cbHoldPermanentFault[IDX_valid]     = (callback_type)std::bind(&Mesh::holdPermanentFaultValid,  this, std::placeholders::_1);
         cbHoldPermanentFault[IDX_propagate] = (callback_type)std::bind(&Mesh::holdPermanentFaultPropag, this, std::placeholders::_1);
     #endif
@@ -97,11 +97,12 @@ public:
     void flipBitC1(uint8_t f);
     void flipBitC2(uint8_t f);
 
-#if ENABLE_PERMANENT_FAULTS
+#ifdef ENABLE_PERMANENT_FAULTS
     void holdPermanentFaults();
     void holdPermaFaultInA(uint8_t idx);
     void holdPermanentFaultInB(uint8_t idx);
-    void holdPermanentFaultC2(uint8_t idx);
+    void holdPermanentFaultInD(uint8_t idx);
+    void holdPermanentFaultOutC(uint8_t idx);
     void holdPermanentFaultValid(uint8_t idx);
     void holdPermanentFaultPropag(uint8_t idx);
 #endif
@@ -223,7 +224,7 @@ void Mesh::loadPointers()
 To flip the in_a register for pe(x,y), we flip the in_a register of pe(x,y-1)
 If the target pe is the first column, we flip the mesh io_in_a_ input
 */
-void Mesh::flipBitInA (uint8_t f)
+void Mesh::flipBitInA(uint8_t f)
 {   
     Fault *fault = faultList[f];
     
@@ -244,7 +245,7 @@ void Mesh::flipBitInA (uint8_t f)
     To flip the in_b register for pe(x,y), we flip the in_b register of pe(x-1,y)
     If the target pe is the first row, we flip the mesh io_in_b_ input
 */
-void Mesh::flipBitInB (uint8_t f)
+void Mesh::flipBitInB(uint8_t f)
 {
     Fault *fault = faultList[f];
 
@@ -266,7 +267,7 @@ void Mesh::flipBitInB (uint8_t f)
     the in_d registers are no longer used.
 */
 
-void Mesh::flipBitInD (uint8_t f) 
+void Mesh::flipBitInD(uint8_t f) 
 {
     Fault *fault = faultList[f];
 
@@ -282,7 +283,7 @@ void Mesh::flipBitInD (uint8_t f)
 }
 
 
-void Mesh::flipBitOutA (uint8_t f)
+void Mesh::flipBitOutA(uint8_t f)
 {
     Fault *fault = faultList[f];
     
@@ -293,7 +294,7 @@ void Mesh::flipBitOutA (uint8_t f)
         pe[fault->row][fault->col-1]->flipBitOutA(fault->bit);
 }
 
-void Mesh::flipBitOutB (uint8_t f)
+void Mesh::flipBitOutB(uint8_t f)
 {
     Fault *fault = faultList[f];
 
@@ -323,14 +324,14 @@ void Mesh::flipBitC2(uint8_t f)
 }
 
 
-void Mesh::flipBitMacOut (uint8_t f)
+void Mesh::flipBitMacOut(uint8_t f)
 {
     Fault *fault = faultList[f];
     pe[fault->row][fault->col]->flipBitMacOut(fault->bit);
 }
 
 
-void Mesh::flipBitPropagB (uint8_t f)
+void Mesh::flipBitPropagB(uint8_t f)
 {
     Fault *fault = faultList[f];
     pe[fault->row][fault->col]->flipBitPropagB();
@@ -358,31 +359,93 @@ void Mesh::holdPermanentFaults()
 }
 
 
-void Mesh::holdPermaFaultInA (uint8_t idx)
+void Mesh::holdPermaFaultInA(uint8_t idx)
 {
     Fault *fault = faultList[idx];
-    pe[fault->row][fault->col]->stuckAtBitInA(fault->bit, fault->pol);
+
+    if (fault->col == 0)
+    {
+        uint32_t mask = 1U << fault->bit; 
+
+        if (fault->pol == 1)
+            *(Input_t*)ptr_mesh_in_a[fault->row] |= mask;
+
+        else
+        {
+            mask = ~mask;
+            *(Input_t*)ptr_mesh_in_a[fault->row] &= mask;
+        }
+    }
+
+    else
+        pe[fault->row][fault->col-1]->stuckAtBitInA(fault->bit, fault->pol);
 }
 
 
-void Mesh::holdPermanentFaultInB (uint8_t idx)
+void Mesh::holdPermanentFaultInB(uint8_t idx)
 {
     Fault *fault = faultList[idx];
-    pe[fault->row][fault->col]->stuckAtBitInB(fault->bit, fault->pol);
+
+    if (fault->row == 0)
+    {
+        uint32_t mask = 1U << fault->bit; 
+
+        if (fault->pol == 1)
+            *(Input_t*)ptr_mesh_in_b[fault->col] |= mask;
+
+        else
+        {
+            mask = ~mask;
+            *(Input_t*)ptr_mesh_in_b[fault->col] &= mask;
+        }
+    }
+
+    else
+        pe[fault->row-1][fault->col]->stuckAtBitInB(fault->bit, fault->pol);
+
 }
 
 
-void Mesh::holdPermanentFaultC2 (uint8_t idx)
+void Mesh::holdPermanentFaultInD(uint8_t idx)
 {
     Fault *fault = faultList[idx];
-    pe[fault->row][fault->col]->stuckAtBitC2(fault->bit, fault->pol);
+
+    if (fault->row == 0)
+    {
+        uint32_t mask = 1U << fault->bit; 
+
+        if (fault->pol == 1)
+            *(Input_t*)ptr_mesh_in_d[fault->col] |= mask;
+
+        else
+        {
+            mask = ~mask;
+            *(Input_t*)ptr_mesh_in_d[fault->col] &= mask;
+        }
+    }
+
+    else
+        pe[fault->row-1][fault->col]->stuckAtBitInD(fault->bit, fault->pol);
 }
 
 
-void Mesh::holdPermanentFaultValid(uint8_t idx)
+void Mesh::holdPermanentFaultOutC(uint8_t idx)
 {
     Fault *fault = faultList[idx];
-    *ptr_mesh_valid[fault->row] = fault->pol; // TODO: rever isto
+    pe[fault->row][fault->col]->stuckAtBitOutC(fault->bit, fault->pol);
+}
+
+
+void Mesh::holdPermanentFaultValid(uint8_t idx) 
+{
+    /*
+        Note: example for DIM8: 
+            even if the last PE is affected, e.g., PE77 (last row, last col), a permanent fault here will affect the whole column, 
+            this is because the state register in PE77 is used during flush for all rows above this column. e.g., the outputs from the rows
+            above flow through this defective register, so the whole thing gets corrupted. 
+    */
+    Fault *fault = faultList[idx];
+    pe[fault->row][fault->col]->stuckAtValid(fault->bit, fault->pol);
 }
 
 

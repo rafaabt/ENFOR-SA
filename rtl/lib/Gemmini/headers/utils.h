@@ -71,7 +71,7 @@ void ffprintf (FILE *fp, int val) // imprime valor em fp forcando o uso de N_CHA
 #if 0
     fprintf(fp, "%d ", val);
 #else // injecting at the GL results in many digits. and the code below breaks.
-    #define N_CHARS 10
+    #define N_CHARS 12
         char str[3*N_CHARS];
 
         uint8_t digits = numPlaces(val);
