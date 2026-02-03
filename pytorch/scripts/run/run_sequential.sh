@@ -22,10 +22,10 @@ for layer in "${target_layers[@]}"; do
             --faultlist $fault_list \
             --injections $injections \
             --output $base_dir \
-            --seed $seed \
             --alias $sim_alias \
             --th_inter $inter_threads \
             --th_intra $intra_threads \
+            --seed $seed \
             #--gold \
             #--seqp \
 

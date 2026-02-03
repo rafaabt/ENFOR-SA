@@ -30,6 +30,10 @@ Inception_V3_target_layers=(0 1 2 10 20 30 40 50 60 70 80 90 92 93)
 # deit layers (all variants)
 deit_layers=(0 1 2 3 4 5 6)
 
+# [Debug only]
+debug_layers=(0)
+
+
 target_layers=(
                 ResNet18_target_layers
                 #ResNet50_target_layers
@@ -44,12 +48,12 @@ target_layers=(
                 #deit_layers
                 #deit_layers
                 #deit_layers
+                #debug_layers
             )
 #
 # Points to the layers declared above, for each model
 #
 declare -n used_layers="${target_layers}"
-#declare -n used_layers="${debug_layers}"
 
 #
 # Runs the sequential fault injection mode

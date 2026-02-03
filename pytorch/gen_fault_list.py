@@ -31,9 +31,11 @@ CONFIG_KEY =  "OSDIM8"
 #CONFIG_KEY = "WSDIM4"
 #CONFIG_KEY = "WSDIM8"
 
-#
-# the model name
-#
+
+if len(sys.argv) < 2:
+    print(f"Syntax: python {sys.argv[0]} <model name>")
+    exit(0)
+
 MODEL = sys.argv[1]
 
 #MODEL="ResNet18"
@@ -93,10 +95,12 @@ HW_TARGETS = [
             conf.SIGNAL['IN_B'], 
             conf.SIGNAL['OUT_C'],
             
+            conf.SIGNAL['C1'], 
+            conf.SIGNAL['C2'],
+
             # control signals
             conf.SIGNAL['SIG_PROPAG'], 
             conf.SIGNAL['SIG_VALID'], 
-            conf.SIGNAL['SIG_DATAFLOW']
         ]
 
 if VIT:

@@ -2,7 +2,6 @@ import torch
 import random
 import csv
 import os
-import random
 import pandas as pd
 import src.definitions as defs
 

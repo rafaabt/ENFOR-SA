@@ -1,21 +1,14 @@
 import torch
-import statistics
 import atexit
-import random
-import time
-import json
 import copy
+import os
 
-from tqdm import tqdm
 from collections import defaultdict, deque
 from typing import List, Optional
-
-from src.models import common
 from src.models.base_model import BaseModel
 from src.experiment import logger as logger
 from src import definitions as defs
 from src.utils import utils as u
-from src.utils import dataset_loader as dataloader
 from src.gemmini import gemmini_config as conf
 from src.flist import fi_target as fit
 from src.flist.fl import fl
@@ -66,15 +59,26 @@ class Experiment():
         """ # removed for open source
         if defs.TREE_FI_MODE: 
             batch_log_type = logger.TYPE_STATS_PER_BATCH_PARALLEL
-            fn_nodes = f"{defs.EXP_FOLDER}/nodes/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
             
+            nodes_path = f"{defs.EXP_FOLDER}/nodes"
+
+            fn_nodes = f"{nodes_path}/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
+            
+            os.makedirs(nodes_path, exist_ok=True)
+
             self.nodes_logger = logger.Logger(fn_nodes, 
                                               logger.TYPE_STATS_PER_NODE,
                                               skip_log=logger.SKIP_NODES_LOG) 
         """
+        
+        trace_path = f"{defs.EXP_FOLDER}/trace"
+        batch_path = f"{defs.EXP_FOLDER}/batch"
 
-        fn_trace = f"{defs.EXP_FOLDER}/trace/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
-        fn_batch = f"{defs.EXP_FOLDER}/batch/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
+        fn_trace = f"{trace_path}/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
+        fn_batch = f"{batch_path}/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
+
+        os.makedirs(trace_path, exist_ok=True)
+        os.makedirs(batch_path, exist_ok=True)
 
         self.trace_logger = logger.Logger(fn_trace, 
                                           logger.TYPE_STATS_PER_FAULT if defs.FI_GEMM else logger.TYPE_STATS_PER_FAULT_SW, 

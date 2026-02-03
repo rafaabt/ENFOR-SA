@@ -1,10 +1,7 @@
 import random
 import csv
-import torch
 import os
 import random
-import math
-import numpy as np
 import pandas as pd
 
 from src import definitions as defs
@@ -12,7 +9,6 @@ from src.gemmini import gemmini_config as conf
 from src.conv import tile_ops as tile_ops
 from src.utils import utils as u
 
-from random import shuffle
 from dataclasses import dataclass
 from collections import deque
 from collections import defaultdict

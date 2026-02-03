@@ -91,15 +91,7 @@ N_INTER_THREADS = 2
 N_INTRA_THREADS = 2
 
 
-# Data type definitions used in the function 'aot_operations.extract_tile'. Must follow the values in 'aot_operations.get_dtype_from_code'
-DType_kInt8    = 1
-DType_kUInt8   = 2
-DType_kInt16   = 3
-DType_kInt32   = 4
-DType_kInt64   = 5
-DType_kFloat32 = 6
-DType_kFloat64 = 7
-DType_kDouble  = 8
+
 
 
 

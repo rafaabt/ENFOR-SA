@@ -12,10 +12,8 @@ from src.utils import dataset_loader as dataloader
 from src import definitions as defs
 #from . import forward_ResNet18 as fw_ResNet18
 
-
 warnings.filterwarnings("ignore", message="TypedStorage is deprecated")
 warnings.filterwarnings("ignore", message="must run observer before calling calculate_qparams")
-
 
 # encapsulates a base dnn model ands provides basic model inference and tensor manipulation facilities
 class BaseModel(torch.nn.Module):
