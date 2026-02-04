@@ -57,19 +57,19 @@ fault_target = {
     #
     # target PE position
     #
-    #'pe_row': 0, # targets only PEs of row 0
-    #'pe_col':(u.ANY, [0, 3, 5]), # e.g., considers only PE cols 0, 3 and 5
+    'pe_row': 0, # targets only PEs of row 0
+    'pe_col':(u.NONE, [0, 2]), # all columns except for columns 0 and 2
 
     #
     # the target bit in each PE
     #
-    'bit': (u.ANY, [5, 6, 7]),  # e.g., only bits 0, 3 and 5
-    #'bit': (u.ANY, [0, 1, 2]),
+    'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
 
     #
     # the target signal in each PE (inputs, outputs or ctrl signals)
     #
-    'target': (u.ANY, [c.IN_A, c.IN_B, c.OUT_C]), # inject only in the PE inputs
+    'target': (u.ANY, [c.IN_A, c.IN_B, c.OUT_C]), # inject only in the PE inputs and outputs
+    #'target': (u.ANY, [c.SIG_PROPAG, c.SIG_VALID]), # inject only in the control signals
 }
 ```
 
