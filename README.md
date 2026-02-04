@@ -109,8 +109,11 @@ Check the examples [here](pytorch/reports/README.md) on how to process the trace
 ## Porting new configurations
 To port new Gemmini configurations, check the documentation [here](rtl/README.md).
 
-## API use
+## API for the systolic array abstraction
 The API to connect PyTorch with the verilated Gemmini modules can be checked [here](pytorch/src/gemmini/README.md).
+
+## API for the injection experiments
+The API to load models instrumented for fault injection and to run injection loops is discussed [here](pytorch/README.md).
 
 ## Citation
 To cite this work:

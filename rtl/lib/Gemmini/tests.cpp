@@ -277,7 +277,7 @@ static bool test_case_4()
             mxm->gemmini->addTransientFault(FaultModel::FM_TRANSIENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, -1, false);  // IDX_io_in_a IDX_io_in_b IDX_io_out_c IDX_valid IDX_propagate
         
         else if(simOpt.faultModel == (int)FaultModel::FM_PERMANENT)
-            mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, 0, -1, false);
+            mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, simOpt.targetGroup, simOpt.peRow, simOpt.peCol, 0, 1, -1, false);
 
         else
         {

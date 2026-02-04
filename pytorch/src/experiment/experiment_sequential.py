@@ -5,7 +5,7 @@ from tqdm import tqdm
 from collections import defaultdict, deque
 from typing import List, Optional
 
-from src.experiment import logger as logger
+from src.experiment import logger
 from src import definitions as defs
 from src.utils import utils as u
 from src.experiment import experiment as exp

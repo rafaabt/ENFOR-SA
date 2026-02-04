@@ -6,7 +6,7 @@ import os
 from collections import defaultdict, deque
 from typing import List, Optional
 from src.models.base_model import BaseModel
-from src.experiment import logger as logger
+from src.experiment import logger
 from src import definitions as defs
 from src.utils import utils as u
 from src.gemmini import gemmini_config as conf
@@ -148,8 +148,7 @@ class Experiment():
         #has_any_index_var, has_any_score_var = False, False
         #has_rank_var = False
 
-        while list_len: 
-
+        while list_len:
             """
                 This will inject all possible faults in the list in a single forward pass. 
                 Faults hitting a tile already injected previously will be skept and added back to the list. 

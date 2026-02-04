@@ -1,5 +1,6 @@
 import torch
 import random 
+import numpy as np
 
 from collections import defaultdict
 from typing import Optional
@@ -31,8 +32,7 @@ MASK_LEVELS = 4
 #
 class CustomConv:
     def __init__(self):
-        self.input_ids = [] # for now we set this externally
-
+        self.input_ids = np.arange(0, defs.BATCH_SIZE+1) # for now we set this externally
         self.batch_id = 0
         self.conv_type = -1
 
@@ -294,11 +294,12 @@ class CustomConv:
 
         tensors = []
         msk_levels_inputs = [[False, False, False, False] for _ in range(batch_input_tensor.shape[0])]
-        base_fl = fl.fault_list.copy()
+        
+        #base_fl = fl.fault_list.copy()
 
         for i, input_tensor in enumerate(batch_input_tensor):  
             # sets the same fault list for the next batch 
-            fl.fault_list = base_fl.copy()
+            #fl.fault_list = base_fl.copy()
             
             # runs the conv for this input batch. this will make the fault list empty
             ret_tensor, msk_levels = self.conv(conv_model, input_tensor.unsqueeze(0), self.input_ids[i], layer_id)
@@ -311,7 +312,7 @@ class CustomConv:
         # add faults with collisions back to the fault list
         # any repeated tiles (collision) in the fault list were not injected due to tile collision
         # if there was collisions, the fault list should be run again (externally) until it is exhausted
-        fl.fault_list.extend(self.fault_list_collision.values())
+        #fl.fault_list.extend(self.fault_list_collision.values())
 
         merged_int = torch.cat([t.int_repr() for t in tensors], dim=0)
         merged_tensors = torch._make_per_tensor_quantized_tensor(merged_int, tensors[0].q_scale(), tensors[0].q_zero_point())

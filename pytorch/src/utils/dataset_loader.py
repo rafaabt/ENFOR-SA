@@ -63,7 +63,7 @@ def build_transform():
     return transforms.Compose(t)
 
 
-def load_dataset_imagenet():
+def load_dataset_imagenet(batch_size=64):
     global dataset
     global dataset_len
 
@@ -90,10 +90,14 @@ def load_dataset_imagenet():
     dataset = torchvision.datasets.ImageFolder(root=f"{defs.PATH_IMAGENET}/val", transform=transform)
 
     # Define data loaders
-    #dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+
     #dataset = dataloader.dataset
 
     dataset_len = len(dataset)
+
+    return dataloader
+
     #print(f"Imagenet validation set size: {dataset_len}") # Imagenet validation set size: 50000
     # Example of iterating over the data loader
     #for images, labels in dl_imagenet_val:

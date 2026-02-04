@@ -6,9 +6,7 @@ from collections import defaultdict
 from src.conv import flattener as flattener
 from src import definitions as defs
 
-
 DO_USE_LUTS = True
-
 
 gl_lut_inputs_int_repr = {}
 conv_ofm_lut = {}

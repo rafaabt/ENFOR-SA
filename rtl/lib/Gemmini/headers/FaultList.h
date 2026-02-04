@@ -4,11 +4,10 @@
 
 
 /* used to insert/remove code that check for permanent faults for improved fi perf. */
-//#define ENABLE_PERMANENT_FAULTS
-#undef ENABLE_PERMANENT_FAULTS
+#define ENABLE_PERMANENT_FAULTS
+//#undef ENABLE_PERMANENT_FAULTS
 
 #define NUMBER_OF_REGISTER_CLUSTERS 10
-
 
 enum class FaultModel : int 
 {

@@ -10,6 +10,8 @@ from src.models import common
 from src.conv import cached_tensors as tcache
 from src.utils import dataset_loader as dataloader
 from src import definitions as defs
+from src.flist.fl import fl
+
 #from . import forward_ResNet18 as fw_ResNet18
 
 warnings.filterwarnings("ignore", message="TypedStorage is deprecated")
@@ -52,6 +54,22 @@ class BaseModel(torch.nn.Module):
         self.calibrate = False
     
 
+    def run_inference(self, inputs, fault=None):
+        if fault != None:
+            fl.next_fault = fault
+
+        with torch.no_grad():  # No need to compute gradients
+            # Get the model's output
+            #self.output_logits = self.model(BaseModel.input_batch) # this wont call the forward pass!!
+            output_logits = self(inputs)
+
+            if defs.CUDA:
+                torch.cuda.synchronize()
+
+            # Apply softmax to get probabilities
+            return output_logits
+
+
     # every type of variable that is shared between faulty and golden models is static (i.e, BaseModel.var):
     #   ex: input batches, input batch ids, ground truth labels (these are set whenever a new golden run is performed)
     # other types of fields are not static (these are set whenever a new inference is performed)
@@ -84,13 +102,15 @@ class BaseModel(torch.nn.Module):
                 # Get the predicted top-1 label for each input in the batch
                 self.predicted_labels = torch.argmax(self.probabilities, dim=1)
 
-                if self.is_golden:
-                    # computes the conf. gap between top1 and top2 confidence levels
-                    for i in range(len(BaseModel.input_batch)):
-                        self.top1_conf[BaseModel.input_batch_indices[i]] = self.top5_classes_values[i][0].item()
-                        self.top2_conf[BaseModel.input_batch_indices[i]] = self.top5_classes_values[i][1].item()
-                        self.conf_gap[BaseModel.input_batch_indices[i]] = (self.top1_conf[BaseModel.input_batch_indices[i]] - self.top2_conf[BaseModel.input_batch_indices[i]])
-
+                """
+                if defs.TREE_FI_MODE:
+                    if self.is_golden:
+                        # computes the conf. gap between top1 and top2 confidence levels
+                        for i in range(len(BaseModel.input_batch)):
+                            self.top1_conf[BaseModel.input_batch_indices[i]] = self.top5_classes_values[i][0].item()
+                            self.top2_conf[BaseModel.input_batch_indices[i]] = self.top5_classes_values[i][1].item()
+                            self.conf_gap[BaseModel.input_batch_indices[i]] = (self.top1_conf[BaseModel.input_batch_indices[i]] - self.top2_conf[BaseModel.input_batch_indices[i]])
+                """
                 return self.predicted_labels, self.top5_classes, self.output_logits
 
         return None, None, None
