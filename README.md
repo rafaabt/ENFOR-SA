@@ -84,7 +84,10 @@ If desired, fault injection can be performed in specific targets by filtering th
 ### Run the experiment
 The experiments must be run in the `pytorch` folder. First,`cd pytorch`, then configure the following scripts:
 
-1. Script [`pytorch/src/definitions.py`](pytorch/src/definitions.py): Set your ImageNet path in `PATH_IMAGENET`;
+1. Set your ImageNet path in `PATH_IMAGENET`:
+```
+export PATH_IMAGENET=<Path to ImageNet>
+```
 2. Script [`pytorch/run.sh`](pytorch/run.sh): Select the desired models and layers to inject;
 3. Folder [pytorch/experiments](pytorch/experiments): Create and configure an experiment script, according to the examples provided (e.g., [`experiment_params_rtl.sh`](pytorch/experiments/experiment_params_rtl.sh));
 4. Script [`pytorch/experiment.sh`](pytorch/experiment.sh): Source your experiment script (e.g., `experiment_params_rtl.sh`). You can have multiple experiment files in the `experiments` folder. Source a single one;
@@ -110,10 +113,10 @@ Check the examples [here](pytorch/reports/README.md) on how to process the trace
 To port new Gemmini configurations, check the documentation [here](rtl/README.md).
 
 ## API for the systolic array handler
-The API to connect PyTorch with the verilated Gemmini modules can be checked [here](pytorch/src/gemmini/README.md).
+Check the [API to connect PyTorch with the verilated Gemmini modules.](pytorch/src/gemmini/README.md)
 
 ## API for fault injection loops
-The API to load models instrumented for fault injection and to run injection loops is discussed [here](pytorch/README.md).
+Check the [API to load models instrumented for fault injection and run injection loops.](pytorch/README.md)
 
 ## Citation
 To cite this work:

@@ -22,7 +22,7 @@ from src.utils import utils as u
 from src import sim_options as opt
 ```
 
-Parse the args and 1. load the models, 2. prepare the dataloader
+Parse the args and 1) load the models, 2) prepare the dataloader
 ```
 # parse args
 args = opt.parse_args()

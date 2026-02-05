@@ -1,8 +1,12 @@
+import os
+
 #
 # Full path to the ImageNet dataset
 #
-PATH_IMAGENET='~/ImageNet/'
+PATH_IMAGENET = os.environ.get("PATH_IMAGENET")
 
+if PATH_IMAGENET is None:
+    raise RuntimeError("PATH_IMAGENET is not set. Run 'export PATH_IMAGENET=<Path to ImageNet>'")
 
 """
     Fixed default options. These options are overwritten in src/flist/fl.py. do not touch them here
@@ -82,7 +86,6 @@ SEED = 0
 
 # Skips fault injections
 RUN_GOLDEN_MODE = False
-
 
 # configures the number of PyTorch threads - https://docs.pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html
 # inter op: One or more inference threads execute a model’s forward pass on the given inputs.

@@ -33,7 +33,6 @@ deit_layers=(0 1 2 3 4 5 6)
 # [Debug only]
 debug_layers=(0)
 
-
 target_layers=(
                 ResNet18_target_layers
                 #ResNet50_target_layers
@@ -61,7 +60,6 @@ declare -n used_layers="${target_layers}"
 for ((i=0; i<${#models[@]}; i++)); do
   ./scripts/run/run_sequential.sh "${models[i]}" "${used_layers[@]}"
 done
-
 
 #
 # Generates the app profile. Run this line, and then "cd ./profiler" and "./gen-svg.sh" (the svg output will be saved in profiler/svg)

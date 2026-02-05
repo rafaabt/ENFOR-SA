@@ -26,7 +26,7 @@ def perf_measure_resnet50_first_layer(gemmini):
     #shape_layer = (torch.Size([64, 147]), torch.Size([147, 12544]))
 
     print("Estimating ResNet50 (first) layer times...")
-    W = torch.randint(MIN_INT, MAX_INT, torch.Size([64, 147]),    dtype=torch.int)
+    W = torch.randint(MIN_INT, MAX_INT, torch.Size([64, 147]), dtype=torch.int)
     I = torch.randint(MIN_INT, MAX_INT, torch.Size([147, 12544]), dtype=torch.int)
     bias = torch.randint(MIN_INT, MAX_INT, torch.Size([64, 12544]), dtype=torch.int)
 
