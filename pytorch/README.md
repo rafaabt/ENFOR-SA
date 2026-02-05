@@ -37,21 +37,9 @@ model_faulty = InstrumentedModel(args.model)
 val_loader = dataloader.load_dataset_imagenet(batch_size=args.bsize)
 ```
 
-Declare some counters
-```
-# total number of injections
-injections = args.injections
-
-# batches tested
-max_batches = args.batches
-
-# counters
-critical_faults, total_sdcs = 0, 0
-```
-
 Configure the fault targets, for example:
 ```
-# customize the desired fault targets
+# customize the desired fault targets. this custom filter will be valid for RTL injections only
 fault_target = {
     #
     # the target conv layer (QuantizedConv2d, QuantizedConvReLU2d, etc...)
@@ -70,7 +58,6 @@ fault_target = {
     #'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
     'bit': (u.ANY, [0, 1, 2]),  # inject only bits 0, 1, and 2
 
-
     #
     # the target signal in each PE (inputs, outputs or ctrl signals)
     #
@@ -87,15 +74,15 @@ fault_target['layer'] = args.layer
 
 Load the fault list
 ```
-# loads the fault list with the desired targets. this will load the rows [0, injections-1]
-fault_list = fl.load_fault_list(args.faultlist, (0, injections-1), filters=fault_target) 
+# loads the fault list with the desired targets. this will load the rows [0, args.injections-1]
+fault_list = fl.load_fault_list(args.faultlist, (0, args.injections-1), filters=fault_target)
 ```
 
 Setup an injection loop
 ```
 # loop over the dataset
 for i, (inputs, gt_target) in enumerate(val_loader):
-    if i == max_batches:
+    if i == args.batches:
         break
 
     # ViT models can run on CUDA
@@ -112,6 +99,9 @@ for i, (inputs, gt_target) in enumerate(val_loader):
 
     # extracts the computed golden labels
     predicted_labels_golden = torch.argmax(probabilities_golden, dim=1)
+    
+    # per-batch counters
+    critical_faults, total_sdcs = 0, 0
 
     # runs the faulty mode by iterating over each fault in the list
     for fault in fault_list:
@@ -133,17 +123,16 @@ for i, (inputs, gt_target) in enumerate(val_loader):
         # the total number of inputs with faults
         total_sdcs += count_inputs_failed
 
+    print(f"Finished batch {i} with {critical_faults} critical faults ({100*critical_faults/args.injections:.2f}%)")
 
     # fault injections run on repeated inputs/layers. we store the conv outputs in LUTs to improve injection time. 
     # the LUTs must be cleared whenever new inputs are to be simulated
     tcache.clear_luts()
-
-print(f"Finished with {critical_faults} critical faults ({100*critical_faults/len(fault_list):.2f}%)")
 ```
 
 To run the previous script, for example, use this command line
 ```
-python example_injection_loop.py --model "ResNet18" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
+python example_injection_loop.py --model "ResNet18" --fmodel "rtl" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
 ```
 
 > [!NOTE]
@@ -152,8 +141,7 @@ python example_injection_loop.py --model "ResNet18" --faultlist fl_os_dim_8.csv 
 ## High level experiment handlers
 There's a high level "API" way to run injection experiments on input indices, as shown in the [`main.py`](./main.py) script. This approach relies on the API defined in [pytorch/src/experiment](./src/experiment) folder. The functions defined in this API, in general, cannot be used in isolation.
 
-
-For example, instead of using explicit model calls, as shown in the previous example, one can run:
+For example, instead of using explicit model calls and injection loops, as shown in the previous example, one can run:
 
 ```
 model_golden = BaseModel(defs.MODEL_NAME)
