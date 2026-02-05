@@ -22,15 +22,6 @@ model_faulty = InstrumentedModel(args.model)
 val_loader = dataloader.load_dataset_imagenet(batch_size=args.bsize)
 
 
-# total number of injections
-injections = args.injections
-
-# batches tested
-max_batches = args.batches
-
-# counters
-critical_faults, total_sdcs = 0, 0
-
 # customize the desired fault targets
 fault_target = {
     #
@@ -64,10 +55,19 @@ fault_target = {
 # important: assure the 'layer' filter matches exaclty what was passed as args
 fault_target['layer'] = args.layer
 
+# total number of injections
+injections = args.injections
+
+# batches tested
+max_batches = args.batches
+
+# counters
+critical_faults, total_sdcs = 0, 0
+
 # loads the fault list with the desired targets. this will load the rows [0, injections-1]
 fault_list = fl.load_fault_list(args.faultlist, (0, injections-1), filters=fault_target) 
 
-# loop over the dataset
+# loops over the dataset
 for i, (inputs, gt_target) in enumerate(val_loader):
     if i == max_batches:
         break
@@ -107,8 +107,30 @@ for i, (inputs, gt_target) in enumerate(val_loader):
         # the total number of inputs with faults
         total_sdcs += count_inputs_failed
 
+
     # fault injections run on repeated inputs/layers. we store the conv outputs in LUTs to improve injection time. 
     # the LUTs must be cleared whenever new inputs are to be simulated
     tcache.clear_luts()
 
 print(f"Finished with {critical_faults} critical faults ({100*critical_faults/len(fault_list):.2f}%)")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

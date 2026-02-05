@@ -143,7 +143,7 @@ print(f"Finished with {critical_faults} critical faults ({100*critical_faults/le
 
 To run the previous script, for example, use this command line
 ```
-python3 example_injection_loop.py --model "ResNet18" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
+python example_injection_loop.py --model "ResNet18" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
 ```
 
 > [!NOTE]
