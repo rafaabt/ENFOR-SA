@@ -269,7 +269,7 @@ class CustomConv:
         mmul_gemm, mmul_gold, msk_levels, repl_row, repl_col = self.matmul_random_tile(input_im2col)
         masked_at_any_level = any(msk_levels)
 
-        if masked_at_any_level and not defs.RUN_GOLDEN_MODE:  # not defs.RUN_GOLDEN_MODE can be set to False for debug/sanity purposes only
+        if masked_at_any_level:
             return gold_tensor, msk_levels
 
         gold_tensor = gold_tensor.reshape(self.weights_flat.shape[0], -1)

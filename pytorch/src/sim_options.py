@@ -54,8 +54,7 @@ def parse_args():
     return args
 
 
-def set_definitions():
-    args = parse_args()
+def set_definitions(args):
 
     # removed for open source
     #if args.seqp and args.tree:

@@ -10,7 +10,7 @@ from src import sim_options as opt
 #
 # load the arg options earlier, before importing the proper fault list managers 
 #
-opt.set_definitions()
+opt.set_definitions(opt.parse_args()) # assure this is called before the next imports...
 
 #
 # import the global fault list manager file

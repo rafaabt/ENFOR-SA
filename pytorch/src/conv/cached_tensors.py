@@ -44,7 +44,6 @@ def load_conv_ofm(input_id, conv_model, input_tensor):
     return conv_model(input_tensor)
 
 
-
 # this returns gold_tensor = ops.quantized.conv2d(input_tensor, conv_model._packed_params, conv_model.scale, conv_model.zero_point)
 def load_conv_batch_ofm(batch_id, conv_model, input_batch_tensor):
     global conv_batch_ofm_lut
@@ -59,8 +58,6 @@ def load_conv_batch_ofm(batch_id, conv_model, input_batch_tensor):
     if input_batch_tensor[0].is_quantized:
         return ops.quantized.conv2d(input_batch_tensor, conv_model._packed_params, conv_model.scale, conv_model.zero_point)
     return conv_model(input_batch_tensor)
-
-
 
 
 # this empties all lusts. call this before running a new input batch

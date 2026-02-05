@@ -11,7 +11,6 @@ from src import definitions as defs
 from torchvision import datasets, transforms
 from torchvision.datasets import ImageNet #, ImageFolder
 
-
 #import torchvision.datasets as tv_datasets
 #import torchvision.transforms as tv_transforms
 
@@ -47,7 +46,6 @@ def build_transform():
                 args.input_size, padding=4)
         return transform
     """
-
     t = []
     if resize_im:
         input_size = 224
@@ -96,8 +94,6 @@ def load_dataset_imagenet(batch_size=64):
 
     dataset_len = len(dataset)
 
-    return dataloader
-
     #print(f"Imagenet validation set size: {dataset_len}") # Imagenet validation set size: 50000
     # Example of iterating over the data loader
     #for images, labels in dl_imagenet_val:
@@ -114,6 +110,9 @@ def load_dataset_imagenet(batch_size=64):
     print(class_to_indices)
     exit(0)
     """
+
+    return dataloader
+
 
 
 def load_dataset_mnist(normalize=True):

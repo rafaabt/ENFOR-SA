@@ -89,5 +89,3 @@ RUN_GOLDEN_MODE = False
 # intra op: Each thread in the forward pass further forks the computation into multiple threads (e.g., a dot product can be split into multiple threads)
 N_INTER_THREADS = 2
 N_INTRA_THREADS = 2
-
-

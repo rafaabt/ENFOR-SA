@@ -31,10 +31,12 @@ def main():
     model_golden = BaseModel(defs.MODEL_NAME)
     model_faulty = InstrumentedModel(defs.MODEL_NAME)
     
-    experiment = exp_seq.ExperimentSequential(model_faulty=model_faulty, model_golden=model_golden) 
+    experiment = exp_seq.ExperimentSequential(model_faulty=model_faulty, 
+                                              model_golden=model_golden) 
 
     #generates a random set of indices. inputs are loaded from the dataset based on the indices
-    input_indices = u.random_indices(size=defs.BATCHES*defs.BATCH_SIZE, max=dataloader.dataset_len-1)
+    input_indices = u.random_indices(size=defs.BATCHES*defs.BATCH_SIZE, 
+                                     max=dataloader.dataset_len-1)
 
     critical_faults = experiment.run_experiment(input_indices)
 

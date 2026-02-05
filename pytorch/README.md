@@ -11,36 +11,39 @@ The fault model is abstracted. For RTL, Gemmini will be invoked in the backgroun
 Import the modules:
 ```
 import torch
+from src.models.instrumented_model import InstrumentedModel
+from src.models.base_model import BaseModel
 import src.utils.dataset_loader as dataloader
 import src.definitions as defs
 from src.conv import cached_tensors as tcache
-from src.models.instrumented_model import InstrumentedModel
-from src.models.base_model import BaseModel
 from src.flist.fl import fl
-from src.flist import fi_target as fit
-from src.gemmini import gemmini_config as c
+import src.gemmini.gemmini_config as c
 from src.utils import utils as u
+from src import sim_options as opt
 ```
 
-Load the models and the dataloader
+Parse the args and 1. load the models, 2. prepare the dataloader
 ```
+# parse args
+args = opt.parse_args()
+
 # loads a golden, reference model
-model_golden = BaseModel(defs.MODEL_NAME)
+model_golden = BaseModel(args.model)
 
 # loads the instrumented model for fault injections
-model_faulty = InstrumentedModel(defs.MODEL_NAME)
+model_faulty = InstrumentedModel(args.model)
 
 # gets a handle to iterate over the dataset
-val_loader = dataloader.load_dataset_imagenet(batch_size=defs.BATCH_SIZE)
+val_loader = dataloader.load_dataset_imagenet(batch_size=args.bsize)
 ```
 
 Declare some counters
 ```
 # total number of injections
-injections = 120
+injections = args.injections
 
 # batches tested
-max_batches = 5
+max_batches = args.batches
 
 # counters
 critical_faults, total_sdcs = 0, 0
@@ -48,22 +51,25 @@ critical_faults, total_sdcs = 0, 0
 
 Configure the fault targets, for example:
 ```
+# customize the desired fault targets
 fault_target = {
     #
     # the target conv layer (QuantizedConv2d, QuantizedConvReLU2d, etc...)
     #
-    'layer': 4,
+    'layer': args.layer,
     
     #
     # target PE position
     #
-    'pe_row': 0, # targets only PEs of row 0
-    'pe_col':(u.NONE, [0, 2]), # all columns except for columns 0 and 2
+    'pe_row': 0, #targets only PEs of row 0
+    'pe_col':(u.NONE, [0, 2]), #targets all columns except for columns 0 and 2
 
     #
     # the target bit in each PE
     #
-    'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
+    #'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
+    'bit': (u.ANY, [0, 1, 2]),  # inject only bits 0, 1, and 2
+
 
     #
     # the target signal in each PE (inputs, outputs or ctrl signals)
@@ -71,20 +77,28 @@ fault_target = {
     'target': (u.ANY, [c.IN_A, c.IN_B, c.OUT_C]), # inject only in the PE inputs and outputs
     #'target': (u.ANY, [c.SIG_PROPAG, c.SIG_VALID]), # inject only in the control signals
 }
+
+# the filter can also be empty
+#fault_target = {}
+
+# important: assure the 'layer' filter matches exaclty what was passed as args
+fault_target['layer'] = args.layer
 ```
 
 Load the fault list
 ```
-fault_list = fl.load_fault_list(defs.FAULT_LIST, (0, injections-1), filters=fault_target) 
+# loads the fault list with the desired targets. this will load the rows [0, injections-1]
+fault_list = fl.load_fault_list(args.faultlist, (0, injections-1), filters=fault_target) 
 ```
 
-Run the injection loop
+Setup an injection loop
 ```
-# loops over the dataset
+# loop over the dataset
 for i, (inputs, gt_target) in enumerate(val_loader):
     if i == max_batches:
         break
 
+    # ViT models can run on CUDA
     inputs = inputs.to(defs.DEVICE, non_blocking=True)
     
     # the ground truth label. this could be used to compute the model accuracy
@@ -103,7 +117,11 @@ for i, (inputs, gt_target) in enumerate(val_loader):
     for fault in fault_list:
         # faulty inference run
         logits_faulty = model_faulty.run_inference(inputs, fault=fault)
+        
+        # compute the faulty softmax probabilities over the logits
         probabilities_faulty = torch.nn.functional.softmax(logits_faulty, dim=1)
+        
+        # extracts the computed faulty labels
         predicted_labels_faulty = torch.argmax(probabilities_faulty, dim=1)
 
         # count the number of inputs for which the faulty model != golden reference
@@ -115,12 +133,21 @@ for i, (inputs, gt_target) in enumerate(val_loader):
         # the total number of inputs with faults
         total_sdcs += count_inputs_failed
 
+
     # fault injections run on repeated inputs/layers. we store the conv outputs in LUTs to improve injection time. 
     # the LUTs must be cleared whenever new inputs are to be simulated
     tcache.clear_luts()
 
 print(f"Finished with {critical_faults} critical faults ({100*critical_faults/len(fault_list):.2f}%)")
 ```
+
+To run the previous script, for example, use this command line
+```
+python3 example_injection_loop.py --model "ResNet18" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
+```
+
+> [!NOTE]
+> The fault list, e.g., fl_os_dim_8.csv, must be stored in the folder [pytorch/fault_lists/ResNet18](./fault_lists/ResNet18).
 
 ## High level experiment handlers
 There's a high level "API" way to run injection experiments on input indices, as shown in the [`main.py`](./main.py) script. This approach relies on the API defined in [pytorch/src/experiment](./src/experiment) folder. The functions defined in this API, in general, cannot be used in isolation.
