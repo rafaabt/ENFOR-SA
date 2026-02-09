@@ -1,12 +1,12 @@
 ## Description
 
-This is a simple example on how to:
+This is a guide on how to:
 1. Instantiate models instrumented for fault injection; 
 2. Configure and load the fault list;
 3. Load the dataset and iterate over it;
 4. Run an injection loop over the model. 
 
-The fault model is abstracted. For RTL, Gemmini will be invoked in the background to compute a single tile. This aspect is transparent. This example is available in [`pytorch/example_injection_loop.py`](example_injection_loop.py).
+The fault model is abstracted. For RTL, Gemmini will be invoked transparently to compute a single matmul tile. This aspect is transparent. This example is available in [`pytorch/example_injection_loop.py`](example_injection_loop.py).
 
 Import the modules:
 ```
@@ -132,7 +132,7 @@ for i, (inputs, gt_target) in enumerate(val_loader):
 
 To run the previous script, for example, use this command line
 ```
-python example_injection_loop.py --model "ResNet18" --fmodel "rtl" --faultlist fl_os_dim_8.csv --layer 3 --injections 20 --bsize 8 --batches 4
+python3 example_injection_loop.py --model "ResNet18" --fmodel "rtl" --faultlist "fl_os_dim_8.csv" --layer 3 --injections 20 --bsize 8 --batches 4
 ```
 
 > [!NOTE]

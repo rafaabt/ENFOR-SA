@@ -37,7 +37,7 @@
 // If we enable the integration of Gemmini with a single gate-level MAC uint
 #ifdef USE_GL_INJECTION
     // Code removed for open source
-    #error "Galte-level FI not available as open source"
+#   error "Galte-level FI not available as open source"
 #endif
 
 

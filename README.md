@@ -84,13 +84,13 @@ If desired, fault injection can be performed in specific targets by filtering th
 ### Run the experiment
 The experiments must be run in the `pytorch` folder. First,`cd pytorch`, then configure the following scripts:
 
-1. Set your ImageNet path in `PATH_IMAGENET`:
+1. Set your ImageNet path:
 ```
 export PATH_IMAGENET=<Path to ImageNet>
 ```
 2. Script [`pytorch/run.sh`](pytorch/run.sh): Select the desired models and layers to inject;
 3. Folder [pytorch/experiments](pytorch/experiments): Create and configure an experiment script, according to the examples provided (e.g., [`experiment_params_rtl.sh`](pytorch/experiments/experiment_params_rtl.sh));
-4. Script [`pytorch/experiment.sh`](pytorch/experiment.sh): Source your experiment script (e.g., `experiment_params_rtl.sh`). You can have multiple experiment files in the `experiments` folder. Source a single one;
+4. Script [`pytorch/experiment.sh`](pytorch/experiment.sh): Source your experiment script (e.g., `experiment_params_rtl.sh`);
 5. Hit `./run.sh`.
 
 The experiment results are logged in `pytorch/reports`. Two types of report files are generated: the `batch` folder summarizes per-batch data (e.g., total number of critical faults per batch per injected layer). The `trace` folder logs data for each individual injected fault and input.

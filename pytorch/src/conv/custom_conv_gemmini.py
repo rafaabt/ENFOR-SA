@@ -144,7 +144,9 @@ class CustomConv:
 
             # Preloads the tile to the PE accumulators (maybe use preload_bias_hw=False for large arrays to improve performance)
             igemm.gemmini_device.preload(bias_tile_q) 
-
+        else:
+            igemm.gemmini_device.reset()
+            
         # updates the Gemmini fault list
         if not defs.RUN_GOLDEN_MODE:
             igemm.gemmini_device.update_fault_list(gemmini_fault)
@@ -270,6 +272,8 @@ class CustomConv:
         masked_at_any_level = any(msk_levels)
 
         if masked_at_any_level:
+            del mmul_gold
+            del mmul_gemm
             return gold_tensor, msk_levels
 
         gold_tensor = gold_tensor.reshape(self.weights_flat.shape[0], -1)

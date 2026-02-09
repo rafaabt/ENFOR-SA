@@ -68,9 +68,6 @@ seed=0
 inter_threads=2
 intra_threads=2
 
-#inter_threads=16
-#intra_threads=16
-
 #
 # The model name and layers come from run.sh
 #
@@ -82,12 +79,3 @@ target_layers=("$@") # capture all remaining args as an array
 # This script's name
 #
 experiment_file="${BASH_SOURCE[0]}"
-
-
-
-
-
-
-
-
-#/usr/bin/time -f "%e"

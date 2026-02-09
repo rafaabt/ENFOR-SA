@@ -32,14 +32,14 @@ def validate_against_hdfit():
 
     gemmini_enfor = ext.load_extension("OSDIM8")
     gemmini_hdfit = ext.load_extension("OSDIM8_HDFIT")
-
-    DIM = conf.DIM
-    
+        
     gemmini_enfor.init()
     gemmini_hdfit.init()
 
     gemmini_enfor.print_info()
     gemmini_hdfit.print_info()
+
+    DIM = conf.DIM
 
     A = torch.zeros((DIM, DIM), dtype=conf.GEMM_INPUT_DTYPE)
     B = torch.zeros((DIM, DIM), dtype=conf.GEMM_INPUT_DTYPE)

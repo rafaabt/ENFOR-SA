@@ -66,7 +66,6 @@ class BaseModel(torch.nn.Module):
             if defs.CUDA:
                 torch.cuda.synchronize()
 
-            # Apply softmax to get probabilities
             return output_logits
 
 
@@ -133,7 +132,6 @@ class BaseModel(torch.nn.Module):
 
         # returns a batch of input tensors with their respective expected top1 labels
         BaseModel.input_batch, BaseModel.ground_truth_labels = dataloader.get_input_batch(batch_indices)
-        
         BaseModel.input_batch = BaseModel.input_batch.to(defs.DEVICE)
         BaseModel.ground_truth_labels = BaseModel.ground_truth_labels.to(defs.DEVICE)
 

@@ -463,6 +463,8 @@ def deit_tiny_patch16_224(pretrained=False, **kwargs):
         )
         model.load_state_dict(checkpoint["model"], strict=False)
         """
+
+        #if defs.CP_FILE == None:
         cp_file=f"./checkpoints/{defs.MODEL_NAME}.pth.tar"
 
         if not os.path.isfile(cp_file):

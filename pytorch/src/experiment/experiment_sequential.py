@@ -77,7 +77,10 @@ class ExperimentSequential(exp.Experiment):
     # runs fault injection trials sequentially
     def run_batch_sequential_fault_list(self, batch_id:int, trials=defs.INJECTIONS):
         # loads the fault list rows [0, trials-1]
-        base_fault_list = fl.load_fault_list(defs.FAULT_LIST, (0, trials-1), filters=fit.fault_target, shuffle_list=False) 
+        base_fault_list = fl.load_fault_list(
+            defs.FAULT_LIST, (0, trials-1), 
+            filters=fit.fault_target, 
+            shuffle_list=False) 
 
         #print(f"Loaded fault list of size {len(base_fault_list)}")
         
@@ -136,13 +139,16 @@ class ExperimentSequential(exp.Experiment):
         avg_batch_work_acc = statistics.mean(list_batch_work_acc) if len(list_batch_work_acc) else 0
         avg_batch_acc_drop = statistics.mean(list_batch_acc_drop) if len(list_batch_acc_drop) else 0
 
-        self.batch_logger.dump_item(logger.StatsPerBatchSequential(
-                                    batch_id, 
-                                    defs.TARGET_LAYER, 
-                                    critical_faults, 
-                                    self.model_golden.batch_top1_accuracy, 
-                                    avg_batch_work_acc, 
-                                    avg_batch_acc_drop, 
-                                    timer.time_measure))
+        self.batch_logger.dump_item(
+            logger.StatsPerBatchSequential(
+                batch_id, 
+                defs.TARGET_LAYER, 
+                critical_faults, 
+                self.model_golden.batch_top1_accuracy, 
+                avg_batch_work_acc, 
+                avg_batch_acc_drop, 
+                timer.time_measure
+                )
+            )
 
         return critical_fault_list, critical_faults

@@ -1,5 +1,4 @@
 source "experiments/experiment_params_debug_rtl.sh"
 #source "experiments/experiment_params_debug_sw.sh"
-
 #source "experiments/experiment_params_rtl.sh"
 #source "experiments/experiment_params_sw.sh"

@@ -5,18 +5,6 @@ from src.gemmini import gemmini_config as conf
 from src.utils import utils as u
 
 
-#
-# all ViT models available
-#
-vit_models = ["deit_tiny", "deit_small", "deit_base",
-              "swin_tiny", "swin_small", "swin_base",
-              "vit_base", "vit_large"]
-
-
-swin_models = ["swin_tiny", "swin_small", "swin_base"]
-
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Simulation options")
 
@@ -54,6 +42,14 @@ def parse_args():
     return args
 
 
+#
+# all ViT models available
+#
+vit_models = ["deit_tiny", "deit_small", "deit_base",
+              "swin_tiny", "swin_small", "swin_base",
+              "vit_base", "vit_large"]
+              
+
 def set_definitions(args):
 
     # removed for open source
@@ -61,7 +57,7 @@ def set_definitions(args):
         #print("[Error]: cannot run with args <--seqp> and <--tree> set at the same time")
         #exit(0)
 
-    if args.model in swin_models:
+    if args.model in ["swin_tiny", "swin_small", "swin_base"]:
         print("Swin models are not supported yet!")
         exit(0)
 

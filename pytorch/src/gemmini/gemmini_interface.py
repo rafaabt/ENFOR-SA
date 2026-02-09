@@ -74,7 +74,14 @@ class Gemmini:
     # updates the fault list in Gemmini with the positions previously (globaly) stored in "fault"
     def update_fault_list(self, fault: Optional[flist.GemminiPos]):
         self.device.clear_fault_list()
-        self.device.add_transient_fault(fault.target, fault.pe_row, fault.pe_col, fault.bit, fault.cell, FI_SILENT)
+        self.device.add_transient_fault(
+            fault.target, 
+            fault.pe_row, 
+            fault.pe_col, 
+            fault.bit, 
+            fault.cell, 
+            FI_SILENT
+            )
         #gemmini_device.add_permanent_fault(fault.target, fault.pe_row, fault.pe_col, fault.bit, 0, FI_SILENT)
 
 
@@ -82,7 +89,14 @@ class Gemmini:
     def update_fault_list_random(self):
         self.device.clear_fault_list()
         new_fault = gen_random_fault()
-        self.device.add_transient_fault(new_fault.target, new_fault.pe_row, new_fault.pe_col, new_fault.bit, fault.cell, FI_SILENT)
+        self.device.add_transient_fault(
+            new_fault.target, 
+            new_fault.pe_row, 
+            new_fault.pe_col, 
+            new_fault.bit, 
+            fault.cell, 
+            FI_SILENT
+            )
 
 
 # Gemmini OS mode

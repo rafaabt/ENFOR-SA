@@ -196,6 +196,35 @@ class TesterGemmini(unittest.TestCase):
 
 
     #@unittest.skip
+    def test_sa_transpose(self):  # this is for OS only!
+        """
+            Transpose a matrix by multiplying by the identity:  
+                (I*A)t = At*It = At*I = At
+        """
+        if conf.GEMM_MODE != conf.MODE_OS:
+            return
+
+        I = torch.eye(conf.DIM, dtype=INPUT_TYPE)
+
+        nFailed, nTrials = 0, 1000
+
+        for i in range(nTrials):
+            self.A.random_(MIN_INT, MAX_INT)
+
+            C_gold = self.A.clone().t()
+            
+            gemmini.reset()
+            steps = gemmini.stream(I, self.A)
+            steps = gemmini.flush_gemm(self.C, True)
+
+            nFailed += not torch.equal(C_gold, self.C)
+
+        fn = inspect.currentframe().f_code.co_name
+        print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
+        self.assertTrue(nFailed == 0)
+
+
+    #@unittest.skip
     def test_matmul_rtl(self):
         nFailed, nTrials = 0, 1000
 

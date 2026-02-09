@@ -57,20 +57,23 @@ class Experiment():
         injConf = conf.CONFIG_KEY if defs.FI_GEMM else "SW"
 
         """ # removed for open source
-        if defs.TREE_FI_MODE: 
+        if defs.TREE_FI_MODE:
             batch_log_type = logger.TYPE_STATS_PER_BATCH_PARALLEL
+            fn_nodes = f"{defs.EXP_FOLDER}/nodes/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
             
-            nodes_path = f"{defs.EXP_FOLDER}/nodes"
+            self.nodes_logger = logger.Logger(
+                fn_nodes, 
+                logger.TYPE_STATS_PER_NODE,
+                skip_log=logger.SKIP_NODES_LOG) 
 
-            fn_nodes = f"{nodes_path}/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
-            
-            os.makedirs(nodes_path, exist_ok=True)
+            fn_tree_dse = f"{defs.EXP_FOLDER}/tree_dse/{defs.CAMP_ALIAS}-s{defs.SEED}-{injConf}.csv"
 
-            self.nodes_logger = logger.Logger(fn_nodes, 
-                                              logger.TYPE_STATS_PER_NODE,
-                                              skip_log=logger.SKIP_NODES_LOG) 
+            self.tree_dse_logger = logger.Logger(
+                fn_tree_dse, 
+                logger.TYPE_TREE_DSE, 
+                skip_log=logger.SKEE_TREE_DSE_LOG)
         """
-        
+
         trace_path = f"{defs.EXP_FOLDER}/trace"
         batch_path = f"{defs.EXP_FOLDER}/batch"
 
@@ -80,13 +83,17 @@ class Experiment():
         os.makedirs(trace_path, exist_ok=True)
         os.makedirs(batch_path, exist_ok=True)
 
-        self.trace_logger = logger.Logger(fn_trace, 
-                                          logger.TYPE_STATS_PER_FAULT if defs.FI_GEMM else logger.TYPE_STATS_PER_FAULT_SW, 
-                                          skip_log=logger.SKIP_TRACE_LOG)
+        self.trace_logger = logger.Logger(
+            fn_trace, 
+            logger.TYPE_STATS_PER_FAULT if defs.FI_GEMM else logger.TYPE_STATS_PER_FAULT_SW, 
+            skip_log=logger.SKIP_TRACE_LOG
+            )
 
-        self.batch_logger = logger.Logger(fn_batch, 
-                                          batch_log_type,
-                                          skip_log=logger.SKIP_BATCH_LOG) 
+        self.batch_logger = logger.Logger(
+            fn_batch, 
+            batch_log_type,
+            skip_log=logger.SKIP_BATCH_LOG
+            ) 
 
 
     def _cleanup_(self): # called automatically at program exit
@@ -95,7 +102,7 @@ class Experiment():
         if not logger.SKIP_LOGS:
             self.trace_logger.flush()
             self.batch_logger.flush()
-
+     
             #if defs.TREE_FI_MODE: # removed for open source
                 #self.nodes_logger.flush()
 
@@ -254,12 +261,14 @@ class Experiment():
               # the (global) last fault (fl.next_faul, Fault() object) was attributed in the last fault injection trial. 
               # here we update the status of such fault
 
-                fl.next_fault.status = FaultStatus(self.model_faulty.stats_gemm_msk.gemm_msk[i], 
-                                                   self.model_faulty.stats_gemm_msk.scale_msk[i], 
-                                                   self.model_faulty.stats_gemm_msk.round_msk[i], 
-                                                   self.model_faulty.stats_gemm_msk.clamp_msk[i],
-                                                   self.model_faulty.stats_gemm_msk.qtz_msk[i], 
-                                                   mismatch_wrt_gold)
+                fl.next_fault.status = FaultStatus(
+                    self.model_faulty.stats_gemm_msk.gemm_msk[i], 
+                    self.model_faulty.stats_gemm_msk.scale_msk[i], 
+                    self.model_faulty.stats_gemm_msk.round_msk[i], 
+                    self.model_faulty.stats_gemm_msk.clamp_msk[i],
+                    self.model_faulty.stats_gemm_msk.qtz_msk[i], 
+                    mismatch_wrt_gold
+                    )
 
             # copy the status from fl.next_fault to the status to be logged
             # it must be a copy because fl.next_fault will change for each iteration of the loop, 
@@ -277,7 +286,8 @@ class Experiment():
             stats_list[i].sdc5 = has_sdc5
             
             # defines a category inclusion by counting the number of items in the predicted top5_classes that are not in the correct golden classes
-            stats_list[i].err_cat_incl = bool(sum(1 for item in self.model_faulty.top5_classes_indices[i] if item not in self.model_golden.top5_classes_indices[i]))
+            stats_list[i].err_cat_incl = bool(sum(1 for item in self.model_faulty.top5_classes_indices[i] \
+                if item not in self.model_golden.top5_classes_indices[i]))
 
             # the number of wrong classes in the top5 prediction
             stats_list[i].rank_variation = (self.model_faulty.top5_classes_indices[i] != self.model_golden.top5_classes_indices[i]).sum().item()

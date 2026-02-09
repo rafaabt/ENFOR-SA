@@ -88,10 +88,11 @@ def load_dataset_imagenet(batch_size=64):
     dataset = torchvision.datasets.ImageFolder(root=f"{defs.PATH_IMAGENET}/val", transform=transform)
 
     # Define data loaders
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-
+    dataloader = DataLoader(dataset, 
+                            batch_size=batch_size, 
+                            shuffle=True, 
+                            num_workers=4)
     #dataset = dataloader.dataset
-
     dataset_len = len(dataset)
 
     #print(f"Imagenet validation set size: {dataset_len}") # Imagenet validation set size: 50000

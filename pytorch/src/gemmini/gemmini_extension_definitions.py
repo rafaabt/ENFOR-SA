@@ -18,7 +18,7 @@ VERILATED_MODULE = 'VMesh__ALL.a'    # The Gemmini module
 #
 # The GL design has a different DUT name:
 #
-# MAC_MODULE="" # removed for open source
+MAC_MODULE=f"{ROOT_PATH}/rtl/verilated/MacUnit_netlist_hdfit/VMacUnit_netlist_hdfit__ALL.a"
 
 #
 # VERILATED_PATH: The base path of the verilated designs (e.g, where verilator creates the verilated designs)
@@ -128,7 +128,6 @@ def load_extension(config_key):
     If any of these change — even just the extra_ldflags string — PyTorch creates a new hash directory, and recompiles everything from scratch.
     This way, if we use a single extension name for each config, we can keep individual cached bindings for each config
     """
-
     return cpp_extension.load(name=f"{EXT_NAME}_{config_key}", 
                               sources=SRC_SER, 
                               extra_cflags=FLAGS, 

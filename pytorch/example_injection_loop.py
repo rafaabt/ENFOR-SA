@@ -1,4 +1,5 @@
 import torch
+import random
 from src.models.instrumented_model import InstrumentedModel
 from src.models.base_model import BaseModel
 import src.utils.dataset_loader as dataloader
@@ -8,6 +9,11 @@ from src.flist.fl import fl
 import src.gemmini.gemmini_config as c
 from src.utils import utils as u
 from src import sim_options as opt
+
+random.seed(defs.SEED)
+torch.manual_seed(defs.SEED)
+torch.cuda.manual_seed(defs.SEED)
+dataloader.load_dataset_imagenet()
 
 # parse args
 args = opt.parse_args()
@@ -32,13 +38,13 @@ fault_target = {
     # target PE position
     #
     'pe_row': 0, #targets only PEs of row 0
-    'pe_col':(u.NONE, [0, 2]), #targets all columns except for columns 0 and 2
+    'pe_col':(u.ANY, [1, 2, 3]), #targets all columns except for columns 0 and 2
 
     #
     # the target bit in each PE
     #
-    #'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
-    'bit': (u.ANY, [0, 1, 2]),  # inject only bits 0, 1, and 2
+    'bit': (u.ANY, [5, 6, 7]),  # inject only bits 5, 6, and 7
+    #'bit': (u.ANY, [0, 1, 2]),  # inject only bits 0, 1, and 2
 
     #
     # the target signal in each PE (inputs, outputs or ctrl signals)
