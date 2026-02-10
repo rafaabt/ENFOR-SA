@@ -39,7 +39,7 @@ sim_alias="simulation-xxx"
 #fault_list="fl_os_dim_8.csv"
 
 # SW injection
-fault_list="fl_sw.csv"
+fault_list="dummy_list_to_prevent_accidents.csv"
 
 #
 # The number of faults to be injected for each input in each target layer

@@ -37,7 +37,7 @@ fault_target = {
     #
     # target PE position
     #
-    'pe_row': 0, #targets only PEs of row 0
+    #'pe_row': 0, #targets only PEs of row 0
     'pe_col':(u.ANY, [1, 2, 3]), #targets all columns except for columns 0 and 2
 
     #
@@ -60,7 +60,11 @@ fault_target = {
 fault_target['layer'] = args.layer
 
 # loads the fault list with the desired targets. this will load the rows [0, args.injections-1]
-fault_list = fl.load_fault_list(args.faultlist, (0, args.injections-1), filters=fault_target)
+fault_list = fl.load_fault_list(
+    args.faultlist, 
+    (0, args.injections-1), 
+    filters=fault_target
+    )
 
 # loop over the dataset
 for i, (inputs, gt_target) in enumerate(val_loader):

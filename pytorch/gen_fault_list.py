@@ -4,15 +4,15 @@ import src.gemmini.gemmini_config as conf
 
 
 # Set this to true to generate fault lists for the systolic array. False to generate SW-only fault lists
-USE_SA = True # True to generate both USE_SA and GL fault lists
-#USE_SA = False # False to generate SW fault lists
+#USE_SA = True # True to generate both USE_SA and GL fault lists
+USE_SA = False # False to generate SW fault lists
 
 
 # For the SA faults, select a Gemmini configuration
 
 # OS configs
 #CONFIG_KEY = "OSDIM4"
-CONFIG_KEY =  "OSDIM8" 
+CONFIG_KEY =  "OSDIM8"
 #CONFIG_KEY = "OSDIM16"
 #CONFIG_KEY = "OSDIM32"
 #CONFIG_KEY = "OSDIM64"

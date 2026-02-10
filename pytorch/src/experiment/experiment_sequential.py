@@ -77,6 +77,7 @@ class ExperimentSequential(exp.Experiment):
     # runs fault injection trials sequentially
     def run_batch_sequential_fault_list(self, batch_id:int, trials=defs.INJECTIONS):
         # loads the fault list rows [0, trials-1]
+
         base_fault_list = fl.load_fault_list(
             defs.FAULT_LIST, (0, trials-1), 
             filters=fit.fault_target, 

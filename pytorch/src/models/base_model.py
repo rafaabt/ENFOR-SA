@@ -55,8 +55,8 @@ class BaseModel(torch.nn.Module):
     
 
     def run_inference(self, inputs, fault=None):
-        if fault != None:
-            fl.next_fault = fault
+        #if fault != None:
+        fl.next_fault = fault
 
         with torch.no_grad():  # No need to compute gradients
             # Get the model's output

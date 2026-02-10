@@ -102,8 +102,6 @@ fault_target = target_outputs
 def setup_target():
     global fault_target
 
-    fault_target['layer'] = defs.TARGET_LAYER  # the target layer is passed as a simul. option at runtime.
-
     if defs.FI_GEMM:  # RTL injections in selected signal types
         #fault_target = target_inputs
         fault_target = target_outputs
@@ -111,4 +109,4 @@ def setup_target():
     else: # SW injections in activations only
         fault_target = target_sw_activation
     
-
+    fault_target['layer'] = defs.TARGET_LAYER  # the target layer is passed as a simul. option at runtime.
