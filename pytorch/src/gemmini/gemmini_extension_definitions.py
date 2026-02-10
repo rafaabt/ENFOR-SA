@@ -15,10 +15,6 @@ ROOT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "..",
 #
 VERILATED_MODULE = 'VMesh__ALL.a'    # The Gemmini module
 
-#
-# The GL design has a different DUT name:
-#
-MAC_MODULE=f"{ROOT_PATH}/rtl/verilated/MacUnit_netlist_hdfit/VMacUnit_netlist_hdfit__ALL.a"
 
 #
 # VERILATED_PATH: The base path of the verilated designs (e.g, where verilator creates the verilated designs)
@@ -110,10 +106,6 @@ def load_extension(config_key):
 
     # Code removed for open source
     """
-    # attach -DUSE_GL_INJECTION if GL is True
-    if defs.ENABLE_GL_FAULT_MODEL:
-        OPT_FLAG = f"{OPT_FLAG} -DUSE_GL_INJECTION"
-        objectFiles.append(MAC_MODULE)
     """
 
     FLAGS = [OPT_FLAG, INCLUDE_FLAG]

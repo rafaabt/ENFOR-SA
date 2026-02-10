@@ -97,10 +97,10 @@ target_sw_activation = {
         parsing the args options. Currently, this is being called in src/experiments/experiment.py -> "fit.setup_target()"
 """
 
-fault_target = target_outputs
+#fault_target = target_outputs
 
 def setup_target():
-    global fault_target
+    #global fault_target
 
     if defs.FI_GEMM:  # RTL injections in selected signal types
         #fault_target = target_inputs
@@ -110,3 +110,5 @@ def setup_target():
         fault_target = target_sw_activation
     
     fault_target['layer'] = defs.TARGET_LAYER  # the target layer is passed as a simul. option at runtime.
+     
+    return fault_target

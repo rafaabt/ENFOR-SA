@@ -80,11 +80,9 @@ class ExperimentSequential(exp.Experiment):
 
         base_fault_list = fl.load_fault_list(
             defs.FAULT_LIST, (0, trials-1), 
-            filters=fit.fault_target, 
+            filters=self.fault_target, 
             shuffle_list=False) 
 
-        #print(f"Loaded fault list of size {len(base_fault_list)}")
-        
         # the list of detected critical faults
         critical_fault_list = []
 
@@ -110,9 +108,8 @@ class ExperimentSequential(exp.Experiment):
         total_faults = len(base_fault_list)
 
         for i in tqdm(range(0, total_faults), desc="Processing fault list", unit="iter", ncols=0):
-        #for fault in base_fault_list:
-            fault = base_fault_list[i] # ATTENTION: uncomment this if using tqdm
-            
+            fault = base_fault_list[i] 
+
             is_input_mispredicted, is_input_critical = self.run_single_fault(fault)
             
             # the number of mispredicted inputs in the batch (used to compute the accuracy)

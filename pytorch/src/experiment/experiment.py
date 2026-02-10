@@ -26,7 +26,7 @@ class Experiment():
         self.model_golden.model.to(defs.DEVICE)
 
         # setup the fault targets
-        fit.setup_target()
+        self.fault_target = fit.setup_target()
 
         atexit.register(self._cleanup_) 
 
@@ -127,53 +127,6 @@ class Experiment():
         self.model_faulty.run_batch_inference()
 
         return self.eval_trial_stats()
-
-
-    def run_parallel_faults(self, faults:deque[fl.Fault], is_leaf_node=False):
-        # sets the global fault list as the random one
-        #fl.fault_list = deque(list(faults)[:])
-        fl.fault_list = faults
-
-        # marks which inputs in the batch are top1 mispredicted (maybe due to the fault or model misclassification)
-        is_input_mispredicted = defaultdict(bool) 
-        
-        # marks which inputs in the batch are different from the golden (golden maybe ground-truth correct or not) 
-        is_input_sdc1_critical = defaultdict(bool)
-
-        # the score variation for each input index
-        #score_variation = defaultdict(bool)
-        #score_variation = defaultdict(float)
-
-        # the accuracy drop status of the fault in the input
-        #status_input_acc_drop = defaultdict(logger.AccDropStatus)  
-
-        # runs every fault in the fault list at the same time, except for the tiles with collisions
-        # the collision fault tiles are added back to fl.fault_list each inference
-        # we have to re-run such faults until the fault list is exhausted 
-        list_len = len(fl.fault_list)
-
-        #has_any_index_var, has_any_score_var = False, False
-        #has_rank_var = False
-
-        while list_len:
-            """
-                This will inject all possible faults in the list in a single forward pass. 
-                Faults hitting a tile already injected previously will be skept and added back to the list. 
-                If any faults were not injected, we will run this loop again until the list is exhausted
-            """
-            self.model_faulty.run_batch_inference() 
-
-            a, b = self.eval_trial_stats(dump_stats=is_leaf_node) # if running the tree mode: only dumps results for leaf nodes
-
-            for index in BaseModel.input_batch_indices:
-                # if any fault collisions happen, we broke a fault node into multiple fault injections - separating the collided faults from each other
-                # these multiple fault injections should account for at most one critical fault per input per node, because we're counting faulty nodes
-                # flags if this input was mispredicted
-                is_input_mispredicted[index] |= a[index]
-                is_input_sdc1_critical[index] |= b[index]  # if the inputs is critical for any faults in the node, the node is flagged as critical
-            list_len = len(fl.fault_list) # this fault list is exhausted in the custom_conv implementation
-
-        return is_input_mispredicted, is_input_sdc1_critical #, status_input_acc_drop, score_variation, has_rank_var
 
 
     # computes and logs the fi stats
