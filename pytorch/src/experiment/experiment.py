@@ -151,12 +151,12 @@ class Experiment():
             lbl_work = self.model_faulty.predicted_labels[i]
 
             mismatch_wrt_grth = (lbl_work != lbl_grth).item()  # is there a mismatch w.r.t the ground truth label (a.k.a, critical fault)
-            mismatch_wrt_gold = (lbl_work != lbl_gold).item() # is there a mismatch w.r.t the gold label (maybe ground truth or not)
+            has_sdc1 = (lbl_work != lbl_gold).item() # is there a mismatch w.r.t the gold label (maybe ground truth or not)
 
             has_sdc5 = not lbl_work in self.model_golden.top5_classes_indices[i] 
 
             is_input_mispredicted[index]  = mismatch_wrt_grth  # the same as sdc1
-            is_input_sdc1_critical[index] = mismatch_wrt_gold 
+            is_input_sdc1_critical[index] = has_sdc1 
             is_input_sdc5_critical[index] = has_sdc5
             
             """
@@ -169,16 +169,14 @@ class Experiment():
 
             input  fault  ground_truth_label  gold_label  work_label
             12      1      10                 10          10     # this fault is not critical. it causes no accuracy drops
-
             10      2      42                 34          56     # this fault is critical. no accuracy drops (w.r.t golden mode)
             12*     3      10                 10          12*    # this fault is critical. it causes accuracy drops, because golden == ground thruth (*)
             14      4      44*                55          44*    # this fault is critical. it improves accuracy, because the faults causes the model to classify correctly (*)
             """
 
-
             """
             # computs the accuracy drops
-            if mismatch_wrt_gold:
+            if has_sdc1:
                 status_input_acc_drop[index].did_acc_drop = lbl_gold == lbl_grth
                 status_input_acc_drop[index].did_acc_impr = lbl_work == lbl_grth
                 status_input_acc_drop[index].did_acc_same = lbl_work != lbl_grth
@@ -187,94 +185,33 @@ class Experiment():
                 status_input_acc_drop[index].did_acc_impr = False
                 status_input_acc_drop[index].did_acc_same = True
             """
-
             if not (dump_stats and not self.trace_logger.skip_log):
                 continue
 
             stats_list[i].input_id = index
-            stats_list[i].tgt_layer = defs.TARGET_LAYER  # TODO: this can be removed. write defs.TARGET_LAYER  directly to the log
-            
-            # removed for open source
-            #stats_list[i].k_tree = self.k_tree if defs.TREE_FI_MODE else 0
-            #stats_list[i].th_conf_score_gap = self.th_conf_score_gap if defs.TREE_FI_MODE else 0
-            stats_list[i].k_tree =  0
-            stats_list[i].th_conf_score_gap = 0
+            stats_list[i].tgt_layer = defs.TARGET_LAYER
+            stats_list[i].sdc1 = has_sdc1
+            stats_list[i].sdc5 = has_sdc5
 
-            """
-            FaultStatus parameters:
-            msk_gemm:  bool = False  # if the fault was masked by Gemmini (note: masked in the **fi layer** )
-            msk_scale: bool = False  # ... masked by scaling
-            msk_round: bool = False  # ... masked by rounding
-            msk_clamp: bool = False  # ... masked by clamping
-            msk_qtz:   bool = False  # ... masked by by quantization (note: masked in the **fi layer** )
-            critical:  bool = False  # if the fault caused a top-1 misclassification
-            """
-            
             if defs.FI_GEMM:
               # the (global) last fault (fl.next_faul, Fault() object) was attributed in the last fault injection trial. 
               # here we update the status of such fault
-
                 fl.next_fault.status = FaultStatus(
                     self.model_faulty.stats_gemm_msk.gemm_msk[i], 
                     self.model_faulty.stats_gemm_msk.scale_msk[i], 
                     self.model_faulty.stats_gemm_msk.round_msk[i], 
                     self.model_faulty.stats_gemm_msk.clamp_msk[i],
                     self.model_faulty.stats_gemm_msk.qtz_msk[i], 
-                    mismatch_wrt_gold
+                    has_sdc1
                     )
 
             # copy the status from fl.next_fault to the status to be logged
             # it must be a copy because fl.next_fault will change for each iteration of the loop, 
             # and we do not want to change the status of the previous iterations on stats_list[i]
             stats_list[i].fault = copy.copy(fl.next_fault)
-
-            # only computing the relative score var for the top1 classification
-            #score_var = abs(self.model_faulty.top5_classes_values[i][0] - self.model_golden.top5_classes_values[i][0])/self.model_golden.top5_classes_values[i][0]
-            score_var = self.model_faulty.top5_classes_values[i][0] - self.model_golden.top5_classes_values[i][0] # cheaper to compute, but equally useless
-
-            # top1 pred != top1 golden
-            stats_list[i].sdc1 = mismatch_wrt_gold
-
-            # the top1 prediction does not belong to any of the top5 predictions 
-            stats_list[i].sdc5 = has_sdc5
             
-            # defines a category inclusion by counting the number of items in the predicted top5_classes that are not in the correct golden classes
-            stats_list[i].err_cat_incl = bool(sum(1 for item in self.model_faulty.top5_classes_indices[i] \
-                if item not in self.model_golden.top5_classes_indices[i]))
-
-            # the number of wrong classes in the top5 prediction
-            stats_list[i].rank_variation = (self.model_faulty.top5_classes_indices[i] != self.model_golden.top5_classes_indices[i]).sum().item()
-
-            # we could also use a counter to count the number of times a given score difference (for each index) reaches a threshold of, let's say, 5% or more variation
-            stats_list[i].score_variation = score_var.item() # TODO: check this. this may cause missing values in the trace file
-
             self.trace_logger.try_dump_item(stats_list[i])
         
         # end of block [for i, index in enumerate(BaseModel.input_batch_indices):]
 
-        # Removed for open source
-        # when using input pruning, we have to padd the trace with dummy fault injections in which the fault was "injected" but was not critical for the pruned inputs
-        """
-        if defs.PRUNE_INPUTS and dump_stats and not self.trace_logger.skip_log: # if running the tree mode, this is only evaluated for leaves
-            if defs.FI_GEMM:
-                fl.next_fault.status = FaultStatus(False, False, False, False, False, False)
-            
-            dummy_f = fl.next_fault
-
-            i = len(BaseModel.input_batch_indices) # the end idx of stats_list (in the previous loop)
-
-            # logs "masked" dummy faults for the pruned inputs
-            for idx_in_full in BaseModel.input_batch_indices_full: 
-                if idx_in_full not in BaseModel.input_batch_indices: # if the input was pruned, we log a dummy row
-                    stats_list[i].input_id = idx_in_full
-                    stats_list[i].tgt_layer = defs.TARGET_LAYER
-                    stats_list[i].k_tree = self.k_tree if defs.TREE_FI_MODE else 0
-                    stats_list[i].th_conf_score_gap = self.th_conf_score_gap if defs.TREE_FI_MODE else 0
-                    stats_list[i].fault = dummy_f
-                    stats_list[i].sdc1 = False
-                    stats_list[i].sdc5 = False
-
-                    self.trace_logger.try_dump_item(stats_list[i])
-                    i += 1
-        """
         return is_input_mispredicted, is_input_sdc1_critical

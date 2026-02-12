@@ -10,11 +10,6 @@ import src.gemmini.gemmini_config as c
 from src.utils import utils as u
 from src import sim_options as opt
 
-random.seed(defs.SEED)
-torch.manual_seed(defs.SEED)
-torch.cuda.manual_seed(defs.SEED)
-dataloader.load_dataset_imagenet()
-
 # parse args
 args = opt.parse_args()
 

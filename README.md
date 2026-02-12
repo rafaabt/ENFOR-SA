@@ -101,11 +101,11 @@ The table below shows an example of a trace file generated for RTL injections. T
 The main classification effects of the fault is shown in columns *sdc1* and *sdc5*. 
 The sdc1 flag is asserted if the fault caused the Top-1 classification label to diverge from the golden label. The sdc5 flag indicates a more aggressive fault, as it is asserted if the Top-1 label is not any of the Top-5 golden labels. For quantized CNN models, we also keep track wheather the fault was masked by the array right during the HW matmul (*gemm_msk*) or during any SW phase of the requantization steps (scaling - *scale_msk*, rounding - *round_msk* or clamping - *clamp_msk*). If the fault is not masked in any of these stages, it gets exposed to the SW by corrupting the layer's output. This effect in the layer may or may not lead to SDCs.
 
-| input_id | fault_tag | layer | tile_row | tile_col | target | pe_row | pe_col | bit | sdc1 | sdc5 | err_cat_inc | gemm_msk | scale_msk | round_msk | clamp_msk | qtz_msk | rank_var | score_var |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 25247 | 42 | 0 | 6 | 1206 | 4 | 0 | 2 | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 0.00 | 0.00 |
-| 49673 | 7 | 1 | 2 | 44 | 1 | 3 | 7 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 0.00 | 0.00 |
-| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| input_id | fault_tag | layer | tile_row | tile_col | target | pe_row | pe_col | bit | sdc1 | sdc5 | gemm_msk | scale_msk | round_msk | clamp_msk | 
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 25247 | 42 | 0 | 6 | 1206 | 4 | 0 | 2 | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 1
+| 49673 | 7 | 1 | 2 | 44 | 1 | 3 | 7 | 4 | 0 | 0 | 0 | 0 | 0 | 1 |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
 
 Check the examples [here](pytorch/reports/README.md) on how to process the trace files.
 

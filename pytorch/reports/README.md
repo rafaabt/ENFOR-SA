@@ -3,6 +3,8 @@
 This directory contains all fault injection report files. See the example below on how to proces a trace file.
 
 ```
+import pandas as pd
+
 # Reads the trace file
 df_full = pd.read_csv(<some trace file>, comment='#', sep='\t')
 

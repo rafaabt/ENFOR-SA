@@ -90,18 +90,8 @@ target_sw_activation = {
 }
 
 
-"""
-    IMPORTANT:
-        fault_target: this is the GLOBAL fault target used to load and filter the fault list (args: --faultlist <>).
-        you must call setup_target() before running the injection experiments. Only call this after 
-        parsing the args options. Currently, this is being called in src/experiments/experiment.py -> "fit.setup_target()"
-"""
-
-#fault_target = target_outputs
-
+""" Return a customized fault target. The target layer is passed as simul. paramenter --layer and stored in defs.TARGET_LAYER """
 def setup_target():
-    #global fault_target
-
     if defs.FI_GEMM:  # RTL injections in selected signal types
         #fault_target = target_inputs
         fault_target = target_outputs

@@ -107,15 +107,16 @@ class CustomConv:
          (https://openaccess.thecvf.com/content_cvpr_2018/papers/Jacob_Quantization_and_Training_CVPR_2018_paper.pdf))
     """
 
-    def gemmini_os_compute_tile(self, 
-                                input_im2col,  # The input in the im2col format
-                                tile_w_row,    # The weight tile row positon
-                                tile_w_col,    # The weight tile col positon
-                                tile_i_row,    # The input tile row positon
-                                tile_i_col,    # The input tile col positon
-                                preload_bias_hw=True, # preloads the bias matrix in the SA (for FI, this is not actually mandatory)
-                                gemmini_fault=None    # The Gemmini fault position of type fl.GemminiPos
-                                ): #: Optional[fl.GemminiPos] = None):
+    def gemmini_os_compute_tile(
+        self, 
+        input_im2col,  # The input in the im2col format
+        tile_w_row,    # The weight tile row positon
+        tile_w_col,    # The weight tile col positon
+        tile_i_row,    # The input tile row positon
+        tile_i_col,    # The input tile col positon
+        preload_bias_hw=True, # preloads the bias matrix in the SA (for FI, this is not actually mandatory)
+        gemmini_fault=None    # The Gemmini fault position of type fl.GemminiPos
+        ): 
 
         # extracts the weight and input tiles
         # note that the zero points are already subtracted from self.weights_flat and input_im2col

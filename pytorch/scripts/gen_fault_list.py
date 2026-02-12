@@ -1,5 +1,9 @@
 import sys
 import importlib
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import src.gemmini.gemmini_config as conf
 
 

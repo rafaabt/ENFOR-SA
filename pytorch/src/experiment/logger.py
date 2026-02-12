@@ -29,73 +29,45 @@ class StatsPerFault:
     sdc1: bool=False  # top1 label != golden label (a.k.a, a critical fault)
     sdc5: bool=False  # top1 label is none of the top5 golden labels
     
-    # category inclusion, rank and score variation (these metrics are so far useless)
-    err_cat_incl:    bool=False 
-    rank_variation:  int=0
-    score_variation: float=0
-
-    # [Parallel mode only]: the tree k's paramenter (number of children nodes)
-    k_tree: int=0
-
-    # only prune inputs if the the top1 - top2 confidence gap is higher than this threshold    
-    th_conf_score_gap: float=0
-
     # the CSV header for the data StatsPerFault
     if defs.FI_GEMM:
-        header = ['input_id', 
-                  'fault_tag', 
-
-                  # the fault layer and fault tile positions (of the unfolded weight and activation matrices)
-                  'layer', 'tile_row', 'tile_col',
-
-                  # the gemmine fault positions
-                  'target', 'pe_row', 'pe_col', 'bit',        
-                    
-                  # flags for the fault outcomes in the end layer
-                  'sdc1',        # the top1 predicted work label differs from the golden label
-                  'sdc5',        # the top1 predicted work label is none of the top5 golden labels
-                  'err_cat_inc', # at least one work label does not belong to the top5 golden labels
-
-                  # flags for the fault outcomes in the injection layer
-                  'gemm_msk', 'scale_msk', 'round_msk', 'clamp_msk', 'qtz_msk', 
-
-                  # rank and score variations in the classification layer
-                  'rank_var', 'score_var', 
-                  
-                  #'k', 'conf_score_th',
-                  ]
+        header = [
+            'input_id', 
+            'fault_tag', 
+            # the fault layer and fault tile positions (of the unfolded weight and activation matrices)
+            'layer', 'tile_row', 'tile_col',
+            # the gemmine fault positions
+            'target', 'pe_row', 'pe_col', 'bit',        
+            # flags for the fault outcomes in the end layer
+            'sdc1',        # the top1 predicted work label differs from the golden label
+            'sdc5',        # the top1 predicted work label is none of the top5 golden labels
+            # flags for the fault outcomes in the injection layer
+            'gemm_msk', 'scale_msk', 'round_msk', 'clamp_msk'
+        ]
 
     else: # SW Injection headers
         if defs.VIT:
-            header = ['input_id', 
-                      'fault_tag', 
-                      'layer',
-                      'x', 'y', 'target', 'bit',        
-                    
-                      # flags for the fault outcomes in the end layer
-                      'sdc1',        # the top1 predicted work label differs from the golden label
-                      'sdc5',        # the top1 predicted work label is none of the top5 golden labels
-                      'err_cat_inc', # at least one work label does not belong to the top5 golden labels
-                      'rank_var', 'score_var', 
-                      #'k', 'conf_score_th'
-                     ]
+            header = [
+                'input_id', 
+                'fault_tag', 
+                'layer',
+                'x', 'y', 'target', 'bit',        
+                # flags for the fault outcomes in the end layer
+                'sdc1',        # the top1 predicted work label differs from the golden label
+                'sdc5',        # the top1 predicted work label is none of the top5 golden labels
+            ]
         else:
-            header = ['input_id', 
-                      'fault_tag', 
-
-                      # the fault layer and fault tile positions (of the unfolded weight and activation matrices)
-                      'layer',
-
-                      # the gemmine fault positions
-                      'target', 'N', 'C', 'H', 'W', 'bit',        
-                    
-                      # flags for the fault outcomes in the end layer
-                      'sdc1',        # the top1 predicted work label differs from the golden label
-                      'sdc5',        # the top1 predicted work label is none of the top5 golden labels
-                      'err_cat_inc', # at least one work label does not belong to the top5 golden labels
-                      'rank_var', 'score_var', 
-                      #'k', 'conf_score_th',
-                    ]
+            header = [
+                'input_id', 
+                'fault_tag', 
+                # the fault layer and fault tile positions (of the unfolded weight and activation matrices)
+                'layer',
+                # the gemmine fault positions
+                'target', 'N', 'C', 'H', 'W', 'bit',        
+                # flags for the fault outcomes in the end layer
+                'sdc1',        # the top1 predicted work label differs from the golden label
+                'sdc5',        # the top1 predicted work label is none of the top5 golden labels
+            ]
 
 # the batch-level stats for the parallel (tree) fault injection approach
 @dataclass
@@ -106,28 +78,25 @@ class StatsPerBatchParallel:
     failed_leaves:  int=0    # the number of critical reached leaves in the tree (a.k.a, critical_faults)
     reached_leaves: int=0    # the number of reached leaves in the tree
     visited_nodes:  int=0
-    k: int=0  # the tree parameter (number of children nodes)
     max_reached_level: int=0 # the maximum level reached in the tree
     batch_gold_accuracy:     float=0  # the golden accuracy for the batch
     avg_batch_work_accuracy: float=0  # the average batch accuracy after a set of injections (avg across all injections) 
     avg_batch_accuracy_drop: float=0  # the average accuracy drop of avg_batch_work_accuracy w.r.t  batch_gold_accuracy
     avg_injection_time: float=0       # the average inj. time in seconds
-    th_conf_score_gap: float=0 
 
     # the CSV header for the data StatsPerBatchParallel
-    header = ['batch_id',
-              'layer',             
-              'critical_faults',    
-              'reached_leaves', 
-              'visited_nodes', 
-              'k', 
-              'max_level', 
-              'avg_batch_gold_acc', 
-              'avg_batch_work_acc', 
-              'avg_batch_acc_drop',
-              'injection_time',
-              #'conf_score_th'
-              ]
+    header = [
+        'batch_id',
+        'layer',             
+        'critical_faults',    
+        'reached_leaves', 
+        'visited_nodes', 
+        'max_level', 
+        'avg_batch_gold_acc', 
+        'avg_batch_work_acc', 
+        'avg_batch_acc_drop',
+        'injection_time',
+    ]
 
 
 # the batch-level stats for the sequential fault injection approach
@@ -147,14 +116,15 @@ class StatsPerBatchSequential:
     #avg_dist: float=0 # [debug only] the average distance of the random interference faults w.r.t the critical one
 
     # the CSV header for the data StatsPerBatchSequential
-    header = ['batch_id',
-              'layer',    
-              'critical_faults', 
-              'avg_batch_gold_acc', 
-              'avg_batch_work_acc', 
-              'avg_batch_acc_drop', 
-              'injection_time'
-            ]
+    header = [
+        'batch_id',
+        'layer',    
+        'critical_faults', 
+        'avg_batch_gold_acc', 
+        'avg_batch_work_acc', 
+        'avg_batch_acc_drop', 
+        'injection_time'
+    ]
 
 
 # this tells, for each input (in llog_trial_stats) if the fault in the input will cause the accuracy to change in a given way (drop, improve or same)
@@ -171,7 +141,12 @@ class StatsPerNode:
     batch_id: int
     visits: int
     criticality: float
-    header = ["node_id", "batch_id", "visits", "criticality"]
+    header = [
+        "node_id", 
+        "batch_id", 
+        "visits", 
+        "criticality"
+    ]
 
 
 # which type of log is this (StatsPerFault, StatsPerBatchParallel, StatsPerBatchSequential,...). used to properly dump the data to the CSV file
@@ -187,12 +162,13 @@ TYPE_STATS_PER_BATCH_SEQUENTIAL = 3
 # logs the nodes' information for the tree injection approach
 TYPE_STATS_PER_NODE  = 4
 
-HEADERS = [ StatsPerFault.header,           # TYPE_STATS_PER_FAULT
-            StatsPerFault.header,           # TYPE_STATS_PER_FAULT_SW 
-            StatsPerBatchParallel.header,   # TYPE_STATS_PER_BATCH_PARALLEL
-            StatsPerBatchSequential.header, # TYPE_STATS_PER_BATCH_SEQUENTIAL
-            StatsPerNode.header             # TYPE_STATS_PER_NODE
-        ]
+HEADERS = [ 
+    StatsPerFault.header,           # TYPE_STATS_PER_FAULT
+    StatsPerFault.header,           # TYPE_STATS_PER_FAULT_SW 
+    StatsPerBatchParallel.header,   # TYPE_STATS_PER_BATCH_PARALLEL
+    StatsPerBatchSequential.header, # TYPE_STATS_PER_BATCH_SEQUENTIAL
+    StatsPerNode.header             # TYPE_STATS_PER_NODE
+]
 
 MAX_BUFF_SIZE = 100 # the StatsPerFault log buffers are flushed everytime they reach this size 
 
@@ -245,98 +221,95 @@ class Logger:
             writer = csv.writer(file, delimiter='\t')
             if self.log_type == TYPE_STATS_PER_FAULT: 
                 for stats in self.buffer:
-                      writer.writerow([ stats.input_id,
-                                        stats.fault.tag,
-                                        stats.tgt_layer,
-                                        stats.fault.tile.a_row,
-                                        stats.fault.tile.b_col,
-                                        stats.fault.gemm.target,
-                                        stats.fault.gemm.pe_row,
-                                        stats.fault.gemm.pe_col,
-                                        stats.fault.gemm.bit,  # TODO: log also the cell for GL injections?
-                                        int(stats.sdc1),
-                                        int(stats.sdc5),
-                                        int(stats.err_cat_incl),
-                                        int(stats.fault.status.msk_gemm),
-                                        int(stats.fault.status.msk_scale),
-                                        int(stats.fault.status.msk_round),
-                                        int(stats.fault.status.msk_clamp),
-                                        int(stats.fault.status.msk_qtz),
-                                        f'{stats.rank_variation:.2f}',
-                                        f'{stats.score_variation:.2f}',
-                                        #stats.k_tree,
-                                        #stats.th_conf_score_gap,
-                                        ])
+                    writer.writerow(
+                        [
+                            stats.input_id,
+                            stats.fault.tag,
+                            stats.tgt_layer,
+                            stats.fault.tile.a_row,
+                            stats.fault.tile.b_col,
+                            stats.fault.gemm.target,
+                            stats.fault.gemm.pe_row,
+                            stats.fault.gemm.pe_col,
+                            stats.fault.gemm.bit,  # TODO: log also the cell for GL injections?
+                            int(stats.sdc1),
+                            int(stats.sdc5),
+                            int(stats.fault.status.msk_gemm),
+                            int(stats.fault.status.msk_scale),
+                            int(stats.fault.status.msk_round),
+                            int(stats.fault.status.msk_clamp),
+                        ]
+                    )
 
             elif self.log_type == TYPE_STATS_PER_FAULT_SW:
                 if defs.VIT:
-                     for stats in self.buffer:
-                          writer.writerow([ stats.input_id,
-                                            stats.fault.tag,
-                                            stats.tgt_layer,
-                                            stats.fault.x,
-                                            stats.fault.y,
-                                            stats.fault.target,
-                                            stats.fault.bit,
-                                            int(stats.sdc1),
-                                            int(stats.sdc5),
-                                            int(stats.err_cat_incl),
-                                            f'{stats.rank_variation:.2f}',
-                                            f'{stats.score_variation:.5f}',
-                                            #stats.k_tree,
-                                            #stats.th_conf_score_gap,
-                                            ])
+                    for stats in self.buffer:
+                        writer.writerow(
+                            [ 
+                                stats.input_id,
+                                stats.fault.tag,
+                                stats.tgt_layer,
+                                stats.fault.x,
+                                stats.fault.y,
+                                stats.fault.target,
+                                stats.fault.bit,
+                                int(stats.sdc1),
+                                int(stats.sdc5),
+                            ]
+                        )
 
                 else:
                     for stats in self.buffer:
-                          writer.writerow([ stats.input_id,
-                                            stats.fault.tag,
-                                            stats.tgt_layer,
-                                            stats.fault.target,
-                                            stats.fault.N,
-                                            stats.fault.C,
-                                            stats.fault.H,
-                                            stats.fault.W,
-                                            stats.fault.bit,
-                                            int(stats.sdc1),
-                                            int(stats.sdc5),
-                                            int(stats.err_cat_incl),
-                                            f'{stats.rank_variation:.2f}',
-                                            f'{stats.score_variation:.2f}',
-                                            #stats.k_tree,
-                                            #stats.th_conf_score_gap,
-                                            ])
+                        writer.writerow(
+                            [ 
+                                stats.input_id,
+                                stats.fault.tag,
+                                stats.tgt_layer,
+                                stats.fault.target,
+                                stats.fault.N,
+                                stats.fault.C,
+                                stats.fault.H,
+                                stats.fault.W,
+                                stats.fault.bit,
+                                int(stats.sdc1),
+                                int(stats.sdc5),
+                            ]
+                        )
 
             elif self.log_type == TYPE_STATS_PER_BATCH_PARALLEL: 
                 for stats in self.buffer: 
-                    writer.writerow([stats.batch_id, 
-                                     stats.tgt_layer, 
-                                     stats.failed_leaves,
-                                     stats.reached_leaves, 
-                                     stats.visited_nodes,
-                                     stats.k, 
-                                     stats.max_reached_level, 
-                                     f'{100*stats.batch_gold_accuracy:.2f}',
-                                     f'{100*stats.avg_batch_work_accuracy:.2f}',
-                                     f'{100*stats.avg_batch_accuracy_drop:.2f}',
-                                     f'{stats.avg_injection_time:.2f}',
-                                     #stats.th_conf_score_gap
-                                     ])
+                    writer.writerow(
+                        [
+                            stats.batch_id, 
+                            stats.tgt_layer, 
+                            stats.failed_leaves,
+                            stats.reached_leaves, 
+                            stats.visited_nodes,
+                            stats.max_reached_level, 
+                            f'{stats.batch_gold_accuracy:.4f}',
+                            f'{stats.avg_batch_work_accuracy:.4f}',
+                            f'{stats.avg_batch_accuracy_drop:.4f}',
+                            f'{stats.avg_injection_time:.2f}',
+                        ]
+                    )
 
             elif self.log_type == TYPE_STATS_PER_BATCH_SEQUENTIAL:
                 for stats in self.buffer: 
-                    writer.writerow([stats.batch_id,
-                                     stats.tgt_layer,
-                                     stats.critical_faults, 
-                                     f'{100*stats.batch_gold_accuracy:.2f}',
-                                     f'{100*stats.avg_batch_work_accuracy:.2f}',
-                                     f'{100*stats.avg_batch_accuracy_drop:.2f}',
-                                     f'{stats.avg_injection_time:.2f}',
-                                    ])
+                    writer.writerow(
+                        [
+                            stats.batch_id,
+                            stats.tgt_layer,
+                            stats.critical_faults, 
+                            f'{stats.batch_gold_accuracy:.4f}',
+                            f'{stats.avg_batch_work_accuracy:.4f}',
+                            f'{stats.avg_batch_accuracy_drop:.4f}',
+                            f'{stats.avg_injection_time:.2f}',
+                        ]
+                    )
 
             elif self.log_type == TYPE_STATS_PER_NODE: 
                 for stats in self.buffer: 
-                    writer.writerow([stats.node_id, stats.batch_id, stats.visits, f'{100*stats.criticality:.2f}'])
+                    writer.writerow([stats.node_id, stats.batch_id, stats.visits, f'{stats.criticality:.4f}'])
             else:
                 raise "Error: invalid log type"
         
