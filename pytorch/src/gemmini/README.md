@@ -181,7 +181,7 @@ In OS  mode, one should reuse the outputs by keeping them in the internal PE acc
 # Preload the D matrix
 steps_pre = gemmini_os.preload(D)
 
-# Stream the inputs, and keep them in the PE accumulators for reuse
+# Stream the inputs, and keep the partial outputs in the PE accumulators for reuse
 steps_mul = gemmini_os.stream(A1, B1) 
 steps_mul = gemmini_os.stream(A2, B2) 
 steps_mul = gemmini_os.stream(A3, B3)
