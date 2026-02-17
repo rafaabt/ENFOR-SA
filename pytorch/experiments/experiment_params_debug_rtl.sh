@@ -65,7 +65,7 @@ fault_list="fl_os_dim_8.csv"
 #
 # The number of faults to be injected for each input in each target layer
 #
-injections=10
+injections=100
 
 #
 # The number of inputs per batch (16 is the best case for my pc)

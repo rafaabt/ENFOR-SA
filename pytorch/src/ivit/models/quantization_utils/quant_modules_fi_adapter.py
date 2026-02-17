@@ -11,11 +11,29 @@ from src.flist.fl import fl
 
 fault_list_collision: defaultdict[int, fl.Fault] = defaultdict(fl.Fault)
 
-def gemmini_tile_matmul(A_int, B_int, tile_A_row=0, tile_A_col=0, tile_B_row=0, tile_B_col=0, gemm_fault=None):
+def gemmini_tile_matmul(
+    A_int, 
+    B_int, 
+    tile_A_row=0, 
+    tile_A_col=0, 
+    tile_B_row=0, 
+    tile_B_col=0, 
+    gemm_fault=None):
 
         # extract_tile returns type conf.GEMM_INPUT_DTYPE (ints)
-        A_tile = tile_ops.extract_tile(A_int, tile_A_row, tile_A_col, conf.DIM)
-        B_tile = tile_ops.extract_tile(B_int, tile_B_row, tile_B_col, conf.DIM)
+        A_tile = tile_ops.extract_tile(
+            A_int, 
+            tile_A_row, 
+            tile_A_col, 
+            conf.DIM
+        )
+
+        B_tile = tile_ops.extract_tile(
+            B_int, 
+            tile_B_row,
+            tile_B_col, 
+            conf.DIM
+        )
 
         #gemm_fault = None # [Debug only]: force to None such that we have runs with Gemmini, but without injections
         
@@ -34,7 +52,13 @@ def gemmini_tile_matmul(A_int, B_int, tile_A_row=0, tile_A_col=0, tile_B_row=0, 
 # otherwise we use the fl.att_blocks_flist_map[defs.TARGET_LAYER][blk_id] fault list
 
 
-def matmul_gemmini(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B, fault_list:List[fl.Fault]=None):
+def matmul_gemmini(
+    A, 
+    pre_act_scaling_factor_A, 
+    B, 
+    pre_act_scaling_factor_B, 
+    fault_list:List[fl.Fault]=None):
+
     # this casiting causes a lot of trouble - we have critical faults even without injecting
     A_int = (A / pre_act_scaling_factor_A) #.to(torch.int)
     B_int = (B / pre_act_scaling_factor_B) #.to(torch.int)   
@@ -74,18 +98,33 @@ def matmul_gemmini(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B, fau
             tile_key = (fault.tile.a_row, fault.tile.b_col)
 
             if tile_key not in injected_tiles:
-                tile_gemm, tile_gold, masked = gemmini_tile_matmul(A_int[inp][head], 
-                                                                   B_int[inp][head], 
-                                                                   tile_A_row=fault.tile.a_row, 
-                                                                   tile_A_col= fault.tile.a_col, 
-                                                                   tile_B_row=fault.tile.b_row, 
-                                                                   tile_B_col=fault.tile.b_col, 
-                                                                   gemm_fault=fault.gemm)
+                tile_gemm, tile_gold, masked = gemmini_tile_matmul(
+                    A_int[inp][head], 
+                    B_int[inp][head], 
+                    tile_A_row=fault.tile.a_row, 
+                    tile_A_col= fault.tile.a_col, 
+                    tile_B_row=fault.tile.b_row, 
+                    tile_B_col=fault.tile.b_col, 
+                    gemm_fault=fault.gemm
+                )
 
                 if not masked:
                     # assure sub_tile does not cast the mm_output
-                    mm_output[inp][head] = tile_ops.sub_tile(mm_output[inp][head], tile_gold, fault.tile.a_row, fault.tile.b_col, conf.DIM)  
-                    mm_output[inp][head] = tile_ops.sum_tile(mm_output[inp][head], tile_gemm, fault.tile.a_row, fault.tile.b_col, conf.DIM) 
+                    mm_output[inp][head] = tile_ops.sub_tile(
+                        mm_output[inp][head], 
+                        tile_gold, 
+                        fault.tile.a_row, 
+                        fault.tile.b_col, 
+                        conf.DIM
+                    )
+
+                    mm_output[inp][head] = tile_ops.sum_tile(
+                        mm_output[inp][head], 
+                        tile_gemm, 
+                        fault.tile.a_row, 
+                        fault.tile.b_col, 
+                        conf.DIM
+                    ) 
                 
                 #masked_all = masked_all and masked
                 injected_tiles[tile_key] = 1
@@ -111,7 +150,12 @@ def matmul_gemmini(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B, fau
     return mm_output
 
 
-def linear_gemmini(x_int, weight_integer, bias_integer, fault_list:List[fl.Fault]=None):
+def linear_gemmini(
+    x_int, 
+    weight_integer, 
+    bias_integer, 
+    fault_list:List[fl.Fault]=None):
+
     batch_size = x_int.shape[0]   
 
     weight_integer_t = (weight_integer.transpose(0, 1)) # this will become non-contiguous
@@ -119,7 +163,12 @@ def linear_gemmini(x_int, weight_integer, bias_integer, fault_list:List[fl.Fault
     #[COLLECT LAYER SHAPES] - Note: use a dummy.csv fault list first
     #shape = (x_int.shape, weight_integer_t.shape); print(f"\nshape_layer[{defs.TARGET_LAYER}] = {shape}");exit(0)
 
-    linear_output = F.linear(x_int, weight=weight_integer, bias=bias_integer) 
+    linear_output = F.linear(
+        x_int, 
+        weight=weight_integer, 
+        bias=bias_integer
+    ) 
+
     #linear_gold = F.linear(x_int, weight=weight_integer, bias=bias_integer) # [Debug only]
 
     # If using CUDA, then we move the tensors to the CPU to edit them
@@ -147,18 +196,33 @@ def linear_gemmini(x_int, weight_integer, bias_integer, fault_list:List[fl.Fault
                 if tile_key not in injected_tiles:
                     tile_key = (fault.tile.a_row, fault.tile.b_col)
 
-                    tile_gemm, tile_gold, masked = gemmini_tile_matmul(x_int[inp], 
-                                                                       weight_integer_t, 
-                                                                       tile_A_row=fault.tile.a_row, 
-                                                                       tile_A_col=fault.tile.a_col, 
-                                                                       tile_B_row=fault.tile.b_row, 
-                                                                       tile_B_col=fault.tile.b_col, 
-                                                                       gemm_fault=fault.gemm)
+                    tile_gemm, tile_gold, masked = gemmini_tile_matmul(
+                        x_int[inp], 
+                        weight_integer_t, 
+                        tile_A_row=fault.tile.a_row, 
+                        tile_A_col=fault.tile.a_col, 
+                        tile_B_row=fault.tile.b_row, 
+                        tile_B_col=fault.tile.b_col, 
+                        gemm_fault=fault.gemm
+                    )
 
                     if not masked:
                         # important: sub_tile and sum_tile do not perform any casing, as it should be...
-                        linear_output[inp] = tile_ops.sub_tile(linear_output[inp], tile_gold, fault.tile.a_row, fault.tile.b_col, conf.DIM)
-                        linear_output[inp] = tile_ops.sum_tile(linear_output[inp], tile_gemm, fault.tile.a_row, fault.tile.b_col, conf.DIM)
+                        linear_output[inp] = tile_ops.sub_tile(
+                            linear_output[inp], 
+                            tile_gold, 
+                            fault.tile.a_row, 
+                            fault.tile.b_col, 
+                            conf.DIM
+                        )
+                        
+                        linear_output[inp] = tile_ops.sum_tile(
+                            linear_output[inp], 
+                            tile_gemm, 
+                            fault.tile.a_row, 
+                            fault.tile.b_col, 
+                            conf.DIM
+                        )
                         
                     injected_tiles[tile_key] = 1
                     #all_masked = all_masked and masked
@@ -177,18 +241,33 @@ def linear_gemmini(x_int, weight_integer, bias_integer, fault_list:List[fl.Fault
             tile_key = (fault.tile.a_row, fault.tile.b_col)  
 
             if tile_key not in injected_tiles:
-                tile_gemm, tile_gold, masked = gemmini_tile_matmul(x_int, 
-                                                                   weight_integer_t,
-                                                                   tile_A_row=fault.tile.a_row, 
-                                                                   tile_A_col=fault.tile.a_col, 
-                                                                   tile_B_row=fault.tile.b_row, 
-                                                                   tile_B_col=fault.tile.b_col, 
-                                                                   gemm_fault=fault.gemm)
+                tile_gemm, tile_gold, masked = gemmini_tile_matmul(
+                    x_int, 
+                    weight_integer_t,
+                    tile_A_row=fault.tile.a_row, 
+                    tile_A_col=fault.tile.a_col, 
+                    tile_B_row=fault.tile.b_row, 
+                    tile_B_col=fault.tile.b_col, 
+                    gemm_fault=fault.gemm
+                )
 
                 if not masked:
                     # assure sub_tile does not cast linear_output
-                    linear_output = tile_ops.sub_tile(linear_output, tile_gold, fault.tile.a_row, fault.tile.b_col, conf.DIM)
-                    linear_output = tile_ops.sum_tile(linear_output, tile_gemm, fault.tile.a_row, fault.tile.b_col, conf.DIM)
+                    linear_output = tile_ops.sub_tile(
+                        linear_output, 
+                        tile_gold, 
+                        fault.tile.a_row, 
+                        fault.tile.b_col, 
+                        conf.DIM
+                    )
+
+                    linear_output = tile_ops.sum_tile(
+                        linear_output, 
+                        tile_gemm, 
+                        fault.tile.a_row, 
+                        fault.tile.b_col, 
+                        conf.DIM
+                    )
                 
                 injected_tiles[tile_key] = 1
             else:
@@ -214,15 +293,31 @@ class QuantMatMulGemmini(QuantMatMul):
     def __init__(self):
         super(QuantMatMulGemmini, self).__init__()
 
-    def forward(self, A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B, fault_list:List[fl.Fault]=None):
+    def forward(
+        self, 
+        A, 
+        pre_act_scaling_factor_A,
+        B, 
+        pre_act_scaling_factor_B, 
+        fault_list:List[fl.Fault]=None):
 
         # if we're running sw injections, than there's nothing for us to do here in this layer (x was injected in the upper layers, in sw)
         # TODO: actually in SW there's no layer replacement (as we use input hooks), so this QuantMatMulGemmini module should even be called (see if we need this if)
         if defs.FI_SW:
-            return super().forward(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B)
+            return super().forward(
+                A, 
+                pre_act_scaling_factor_A, 
+                B, 
+                pre_act_scaling_factor_B
+            )
 
         if not hasattr(fl, "next_fault"): #  no faults yet. this is the calibration phase, before the fault list is loaded
-            return super().forward(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B)
+            return super().forward(
+                A, 
+                pre_act_scaling_factor_A, 
+                B, 
+                pre_act_scaling_factor_B
+            )
         
         # if there's no fault in the list, then it means this is not a target block for fault injection, and we return the golden function
         # explanation:
@@ -230,12 +325,23 @@ class QuantMatMulGemmini(QuantMatMul):
         # the fault list for each layer/block is loaded in the beginning, from the base fault list (or subfault list for child nodes)
         # this means that for this particular layer/block pair, there's no certainty that there's going to be a fault to be injected
         if len(fault_list) == 0:
-            return super().forward(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B)
+            return super().forward(
+                A, 
+                pre_act_scaling_factor_A, 
+                B, 
+                pre_act_scaling_factor_B
+            )
 
         act_scaling_factor = pre_act_scaling_factor_A * pre_act_scaling_factor_B
         self.act_scaling_factor = act_scaling_factor
 
-        mm_output = matmul_gemmini(A, pre_act_scaling_factor_A, B, pre_act_scaling_factor_B, fault_list)
+        mm_output = matmul_gemmini(
+            A, 
+            pre_act_scaling_factor_A, 
+            B,
+            pre_act_scaling_factor_B, 
+            fault_list
+        )
 
         # original
         #return (A_int @ B_int) * act_scaling_factor, act_scaling_factor
@@ -270,7 +376,11 @@ class QuantLinearGemmini(QuantLinear):
         super(QuantLinearGemmini, self).__init__(in_features, out_features, bias)
 
 
-    def forward(self, x, prev_act_scaling_factor=None, fault_list:List[fl.Fault]=None):
+    def forward(
+        self, 
+        x, 
+        prev_act_scaling_factor=None, 
+        fault_list:List[fl.Fault]=None):
 
         # if we're running sw injections, than there's nothing for us to do here in this layer (x was injected in the upper layers, in sw)
         if defs.FI_SW:
@@ -305,7 +415,10 @@ class QuantLinearGemmini(QuantLinear):
                 self.weight_bit, self.min_val, self.max_val)
 
         self.weight_integer = self.weight_function(
-            self.weight, self.weight_bit, self.fc_scaling_factor, True)
+            self.weight, 
+            self.weight_bit, 
+            self.fc_scaling_factor, 
+            True)
 
         bias_scaling_factor = self.fc_scaling_factor * prev_act_scaling_factor
 
@@ -318,7 +431,11 @@ class QuantLinearGemmini(QuantLinear):
         prev_act_scaling_factor = prev_act_scaling_factor.view(1, -1)
         x_int = x / prev_act_scaling_factor
 
-        linear_output = linear_gemmini(x_int, self.weight_integer, self.bias_integer, fault_list)
+        linear_output = linear_gemmini(
+            x_int, 
+            self.weight_integer, 
+            self.bias_integer, fault_list
+        )
         #linear_output_gold = F.linear(x_int, weight=self.weight_integer, bias=self.bias_integer) # [Debug only]
 
 

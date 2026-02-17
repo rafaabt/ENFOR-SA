@@ -72,32 +72,7 @@ class StatsPerFault:
 # the batch-level stats for the parallel (tree) fault injection approach
 @dataclass
 class StatsPerBatchParallel:
-    # input id and targets
-    batch_id:  int=0  # the batch id
-    tgt_layer: int=0  # target conv layer id
-    failed_leaves:  int=0    # the number of critical reached leaves in the tree (a.k.a, critical_faults)
-    reached_leaves: int=0    # the number of reached leaves in the tree
-    visited_nodes:  int=0
-    max_reached_level: int=0 # the maximum level reached in the tree
-    batch_gold_accuracy:     float=0  # the golden accuracy for the batch
-    avg_batch_work_accuracy: float=0  # the average batch accuracy after a set of injections (avg across all injections) 
-    avg_batch_accuracy_drop: float=0  # the average accuracy drop of avg_batch_work_accuracy w.r.t  batch_gold_accuracy
-    avg_injection_time: float=0       # the average inj. time in seconds
-
-    # the CSV header for the data StatsPerBatchParallel
-    header = [
-        'batch_id',
-        'layer',             
-        'critical_faults',    
-        'reached_leaves', 
-        'visited_nodes', 
-        'max_level', 
-        'avg_batch_gold_acc', 
-        'avg_batch_work_acc', 
-        'avg_batch_acc_drop',
-        'injection_time',
-    ]
-
+   header = []
 
 # the batch-level stats for the sequential fault injection approach
 @dataclass
@@ -137,16 +112,8 @@ class AccDropStatus:
 
 @dataclass
 class StatsPerNode:
-    node_id: int
-    batch_id: int
-    visits: int
-    criticality: float
-    header = [
-        "node_id", 
-        "batch_id", 
-        "visits", 
-        "criticality"
-    ]
+    header=[]
+
 
 
 # which type of log is this (StatsPerFault, StatsPerBatchParallel, StatsPerBatchSequential,...). used to properly dump the data to the CSV file
@@ -171,7 +138,6 @@ HEADERS = [
 ]
 
 MAX_BUFF_SIZE = 100 # the StatsPerFault log buffers are flushed everytime they reach this size 
-
 
 class Logger:
     def __init__(self, output_fn, log_type=TYPE_STATS_PER_FAULT, skip_log=False):
@@ -238,8 +204,7 @@ class Logger:
                             int(stats.fault.status.msk_scale),
                             int(stats.fault.status.msk_round),
                             int(stats.fault.status.msk_clamp),
-                        ]
-                    )
+                        ])
 
             elif self.log_type == TYPE_STATS_PER_FAULT_SW:
                 if defs.VIT:
@@ -255,9 +220,7 @@ class Logger:
                                 stats.fault.bit,
                                 int(stats.sdc1),
                                 int(stats.sdc5),
-                            ]
-                        )
-
+                            ])
                 else:
                     for stats in self.buffer:
                         writer.writerow(
@@ -273,8 +236,7 @@ class Logger:
                                 stats.fault.bit,
                                 int(stats.sdc1),
                                 int(stats.sdc5),
-                            ]
-                        )
+                            ])
 
             elif self.log_type == TYPE_STATS_PER_BATCH_PARALLEL: 
                 for stats in self.buffer: 
@@ -290,8 +252,7 @@ class Logger:
                             f'{stats.avg_batch_work_accuracy:.4f}',
                             f'{stats.avg_batch_accuracy_drop:.4f}',
                             f'{stats.avg_injection_time:.2f}',
-                        ]
-                    )
+                        ])
 
             elif self.log_type == TYPE_STATS_PER_BATCH_SEQUENTIAL:
                 for stats in self.buffer: 
@@ -304,8 +265,7 @@ class Logger:
                             f'{stats.avg_batch_work_accuracy:.4f}',
                             f'{stats.avg_batch_accuracy_drop:.4f}',
                             f'{stats.avg_injection_time:.2f}',
-                        ]
-                    )
+                        ])
 
             elif self.log_type == TYPE_STATS_PER_NODE: 
                 for stats in self.buffer: 

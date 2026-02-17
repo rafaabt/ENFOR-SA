@@ -78,9 +78,7 @@ int init()
         printf("[C++ extension Failed] init() err: mxm\n");
         return 0;
     }
-
     //std::cout << RED << "[C++ extension]: Gemmini config: " << GEMM_CONFIG_ALIAS << RESET <<  std::endl;
-
     return 1;
 }
 
@@ -96,21 +94,17 @@ uint32_t preload(const torch::Tensor& tensor)
 {
     /* this trick forces the tensor to be contiguous in memory, however, if the tensor is not already contiguous, this 
     will result in a memory copy, which is bad for perf. i'd rather only pass contiguous tensors to all functions in this layer */
-
     //if (!tensor.is_contiguous()) 
         //tensor = tensor.contiguous();
     
     assert(tensor.dim() == 2 && tensor.size(0) == DIM && tensor.size(1) == DIM);
-
     // Get pointers to the data
-    Output_t* data_ptr = tensor.data_ptr<Output_t>();
-
 #ifdef GEMM_OS
-    auto* mat = reinterpret_cast<Output_t(*)[DIM]>(data_ptr);
+    Output_t* data_ptr = tensor.data_ptr<Output_t>();
 #else
-    auto* mat = reinterpret_cast<Input_t(*)[DIM]>(data_ptr);
+    Input_t* data_ptr = tensor.data_ptr<Output_t>();
 #endif
-    return mxm->preload(mat);
+    return mxm->preload(data_ptr);
 }
 
  
@@ -119,11 +113,11 @@ uint32_t preload(const torch::Tensor& tensor)
 uint32_t flush_gemm(torch::Tensor& tensor, bool transpose_output)
 {
     assert(tensor.dim() == 2 && tensor.size(0) == DIM && tensor.size(1) == DIM);
-    
     // Get pointers to the data
     Output_t* data_ptr = tensor.data_ptr<Output_t>();
-    auto* mat = reinterpret_cast<Output_t (*)[DIM]>(data_ptr);
-    return mxm->flush(mat, transpose_output);
+    uint32_t r =  mxm->flush(data_ptr, transpose_output);
+    tensor = torch::from_blob(data_ptr, {tensor.size(0), tensor.size(0)}, torch::kInt32); 
+    return r;
 }
 
 
@@ -135,17 +129,15 @@ uint32_t stream(const torch::Tensor& tA, const torch::Tensor& tB)
     auto B_cpu = B.to(torch::kCPU, torch::kInt).contiguous();
 #endif
 
-    assert(tA.dim() == 2 && tA.size(0) == DIM && tA.size(1) == DIM);
-    assert(tB.dim() == 2 && tB.size(0) == DIM && tB.size(1) == DIM);
+    assert(tA.dim() == 2 && tA.size(0) == DIM);
+    assert(tB.dim() == 2 && tB.size(1) == DIM);
+    assert(tA.size(1) == tB.size(0));
 
     // Get pointers to the data
     Input_t* data_ptr_A = tA.data_ptr<Input_t>();
     Input_t* data_ptr_B = tB.data_ptr<Input_t>();
 
-    auto* A_mat = reinterpret_cast<Input_t (*)[DIM]>(data_ptr_A);
-    auto* B_mat = reinterpret_cast<Input_t (*)[DIM]>(data_ptr_B);
-
-    return mxm->stream(A_mat, B_mat);
+    return mxm->stream(data_ptr_A, data_ptr_B, tA.size(1));
 }
 #endif
 
@@ -154,37 +146,34 @@ uint32_t stream(const torch::Tensor& tA, const torch::Tensor& tB)
 /* WS: streams tA through the array. this assumes a bias matrix zero. the output is stored in tC*/
 uint32_t stream(const torch::Tensor& tA, torch::Tensor& tC) 
 {
-    assert(tA.dim() == 2 && tA.size(0) == DIM && tA.size(1) == DIM);
+    assert(tA.dim() == 2 && tA.size(0) == DIM);
     assert(tC.dim() == 2 && tC.size(0) == DIM && tC.size(1) == DIM);
 
     // Get pointers to the data
     Input_t*  data_ptr_A = tA.data_ptr<Input_t>();
     Output_t* data_ptr_C = tC.data_ptr<Output_t>();
    
-    auto* A_mat = reinterpret_cast<Input_t (*)[DIM]>(data_ptr_A);
-    auto* C_mat = reinterpret_cast<Output_t(*)[DIM]>(data_ptr_C);
-
-    return mxm->stream(A_mat, C_mat);
+    uint32_t r = mxm->stream(data_ptr_A, data_ptr_C,  tA.size(1));
+    tC = torch::from_blob(data_ptr_C, {tC.size(0), tC.size(0)}, torch::kInt32); 
+    return r;
 }
 
 
 /* WS: streams tA and tD (bias) matrix through the array. the output is stored in tC */
 uint32_t stream_bias(const torch::Tensor& tA, const torch::Tensor& tD, torch::Tensor& tC) 
 {
-    assert(tA.dim() == 2 && tA.size(0) == DIM && tA.size(1) == DIM);
-    assert(tD.dim() == 2 && tD.size(0) == DIM && tD.size(1) == DIM);
-    assert(tC.dim() == 2 && tC.size(0) == DIM && tC.size(1) == DIM);
+    assert(tA.dim() == 2 && tA.size(0) == DIM);
+    assert(tD.dim() == 2 && tD.size(1) == DIM);
+    assert(tA.size(1) == tD.size(0));
 
     // Get pointers to the data
     Input_t*  data_ptr_A = tA.data_ptr<Input_t>();
     Output_t* data_ptr_D = tD.data_ptr<Output_t>();
     Output_t* data_ptr_C = tC.data_ptr<Output_t>();
 
-    auto* A_mat = reinterpret_cast<Input_t (*)[DIM]>(data_ptr_A);
-    auto* D_mat = reinterpret_cast<Output_t(*)[DIM]>(data_ptr_D);
-    auto* C_mat = reinterpret_cast<Output_t(*)[DIM]>(data_ptr_C);
-
-    return mxm->stream_bias(A_mat, D_mat, C_mat);
+    uint32_t r =  mxm->stream_bias(data_ptr_A, data_ptr_D, data_ptr_C, tA.size(1));
+    tC = torch::from_blob(data_ptr_C, {tC.size(0), tC.size(0)}, torch::kInt32);
+    return r;
 }
 #endif
 
@@ -193,15 +182,43 @@ uint32_t stream_bias(const torch::Tensor& tA, const torch::Tensor& tD, torch::Te
    The "cluster" group specifies which input is the inject target according to the values defined in the "ClusterLoader.h" enum values 
    (Mesh.h refers to such values to create the fault injection callbacks)
 */
-void add_transient_fault(uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, uint32_t cell, bool silent)
+void add_transient_fault(
+    uint8_t cluster, 
+    uint8_t row, 
+    uint8_t col, 
+    uint8_t bit, 
+    uint32_t cell, 
+    bool silent)
 {
-    mxm->gemmini->addTransientFault(FaultModel::FM_TRANSIENT, cluster, row, col, bit, cell, silent);
+    mxm->gemmini->addTransientFault(
+        FaultModel::FM_TRANSIENT, 
+        cluster, 
+        row, 
+        col, 
+        bit, 
+        cell, 
+        silent);
 }
 
 
-void add_permanent_fault(uint8_t cluster, uint8_t row, uint8_t col, uint8_t bit, int8_t pol, uint32_t cell, bool silent)
+void add_permanent_fault(
+    uint8_t cluster, 
+    uint8_t row, 
+    uint8_t col, 
+    uint8_t bit, 
+    int8_t pol,
+    uint32_t cell, 
+    bool silent)
 {
-    mxm->gemmini->addPermanentFault(FaultModel::FM_PERMANENT, cluster, row, col, bit, pol, cell, silent);
+    mxm->gemmini->addPermanentFault(
+        FaultModel::FM_PERMANENT, 
+        cluster, 
+        row, 
+        col, 
+        bit, 
+        pol, 
+        cell, 
+        silent);
 }
 
 

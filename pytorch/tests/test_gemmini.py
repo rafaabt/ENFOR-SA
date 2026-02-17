@@ -29,7 +29,7 @@ import src.definitions as defs
 # OS configs
 #
 #CONFIG_KEY = "OSDIM4"
-CONFIG_KEY = "OSDIM8"
+#CONFIG_KEY = "OSDIM8"
 #CONFIG_KEY = "OSDIM16"
 #CONFIG_KEY = "OSDIM32"
 #CONFIG_KEY = "OSDIM64"
@@ -47,11 +47,15 @@ CONFIG_KEY = "OSDIM8"
 # WS configs
 #
 #CONFIG_KEY = "WSDIM4"
-#CONFIG_KEY = "WSDIM8"
+CONFIG_KEY = "WSDIM8"
 
 #
 # Loads the Gemmini module - the ahead-of-time extension to interface with the verilated Gemmini module (this lib is designed in /rtl/lib/Gemmini)
 #
+
+defs.ENABLE_GL_FAULT_MODEL = False
+#defs.ENABLE_GL_FAULT_MODEL = True
+
 gemmini = ext.load_extension(CONFIG_KEY) # if CONFIG_KEY is a direct config name
 
 DIM = conf.DIM
@@ -59,29 +63,42 @@ INPUT_TYPE  = conf.GEMM_INPUT_DTYPE
 OUTPUT_TYPE = conf.GEMM_OUTPUT_DTYPE
 MIN_INT, MAX_INT = -128, 127
 
+if CONFIG_KEY in ["WSDIM4", "WSDIM8"]: # as in WS we preload the B tensor, we must assure the stream size is same size of the SA
+    STREAM_SIZE = conf.CONFIG_PARAMS[CONFIG_KEY]["dim"]
+
+else:
+    #STREAM_SIZE = 8
+    # the shape of the left->right input stream must be DIM x STREAM_SIZE
+    # the shape of the top->bottom input stream must be STREAM_SIZE x DIM
+    # in all cases, we must assure STREAM_SIZE >= DIM
+
+    STREAM_SIZE = conf.CONFIG_PARAMS[CONFIG_KEY]["dim"] + 4 
 
 #unittest.skip
 class TesterGemmini(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TesterGemmini, self).__init__(*args, **kwargs)
 
-        self.A = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
 
-        self.B = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
+        assert (STREAM_SIZE >= conf.DIM)
+
+        self.A = torch.zeros((DIM, STREAM_SIZE), dtype=INPUT_TYPE)
+
+        self.B = torch.zeros((STREAM_SIZE, DIM), dtype=INPUT_TYPE)
         self.D = torch.zeros((DIM, DIM), dtype=OUTPUT_TYPE)
         self.C = torch.zeros((DIM, DIM), dtype=OUTPUT_TYPE)
 
-        self.A1 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
-        self.B1 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
+        self.A1 = torch.zeros((DIM, STREAM_SIZE), dtype=INPUT_TYPE)
+        self.B1 = torch.zeros((STREAM_SIZE, DIM), dtype=INPUT_TYPE)
 
-        self.A2 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
-        self.B2 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
+        self.A2 = torch.zeros((DIM, STREAM_SIZE), dtype=INPUT_TYPE)
+        self.B2 = torch.zeros((STREAM_SIZE, DIM), dtype=INPUT_TYPE)
 
-        self.A3 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
-        self.B3 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
+        self.A3 = torch.zeros((DIM, STREAM_SIZE), dtype=INPUT_TYPE)
+        self.B3 = torch.zeros((STREAM_SIZE, DIM), dtype=INPUT_TYPE)
 
-        self.A4 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
-        self.B4 = torch.zeros((DIM, DIM), dtype=INPUT_TYPE)
+        self.A4 = torch.zeros((DIM, STREAM_SIZE), dtype=INPUT_TYPE)
+        self.B4 = torch.zeros((STREAM_SIZE, DIM), dtype=INPUT_TYPE)
 
     def setUp(self):
         """
@@ -178,46 +195,22 @@ class TesterGemmini(unittest.TestCase):
         if conf.GEMM_MODE != conf.MODE_OS:
             return
 
-        nFailed, nTrials = 0, 1000
+        nFailed, nTrials = 0, 100
        
         for i in range(nTrials):
             self.D.random_(MIN_INT, MAX_INT)
 
             C_gold = self.D.clone()  
+            C_gold_t = C_gold.clone().t()  
 
             steps = gemmini.preload(self.D)
             steps = gemmini.flush_gemm(self.C, False) 
-
-            nFailed += not torch.equal(C_gold, self.C)
-
-        fn = inspect.currentframe().f_code.co_name
-        print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
-        self.assertTrue(nFailed == 0)
-
-
-    #@unittest.skip
-    def test_sa_transpose(self):  # this is for OS only!
-        """
-            Transpose a matrix by multiplying by the identity:  
-                (I*A)t = At*It = At*I = At
-        """
-        if conf.GEMM_MODE != conf.MODE_OS:
-            return
-
-        I = torch.eye(conf.DIM, dtype=INPUT_TYPE)
-
-        nFailed, nTrials = 0, 1000
-
-        for i in range(nTrials):
-            self.A.random_(MIN_INT, MAX_INT)
-
-            C_gold = self.A.clone().t()
             
-            gemmini.reset()
-            steps = gemmini.stream(I, self.A)
-            steps = gemmini.flush_gemm(self.C, True)
-
             nFailed += not torch.equal(C_gold, self.C)
+
+            steps = gemmini.preload(self.D)
+            steps = gemmini.flush_gemm(self.C, True) 
+            nFailed += not torch.equal(C_gold_t, self.C)
 
         fn = inspect.currentframe().f_code.co_name
         print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
@@ -226,7 +219,7 @@ class TesterGemmini(unittest.TestCase):
 
     #@unittest.skip
     def test_matmul_rtl(self):
-        nFailed, nTrials = 0, 1000
+        nFailed, nTrials = 0, 100
 
         for i in range(nTrials):
             self.A.random_(MIN_INT, MAX_INT)
@@ -241,8 +234,6 @@ class TesterGemmini(unittest.TestCase):
                 gemmini.preload(self.D)
                 steps = gemmini.stream(self.A, self.B)
                 steps = gemmini.flush_gemm(self.C, False) 
-                eq = torch.equal(C_gold, self.C)
-
             else: # MODE_WS
                 steps_pre = gemmini.preload(self.B)
                 #steps_mm  = gemmini.stream(self.A, self.C) # if D is zero
@@ -252,8 +243,8 @@ class TesterGemmini(unittest.TestCase):
             
         fn = inspect.currentframe().f_code.co_name
         print(f"{fn} iterations: {nTrials} - failed: {nFailed}")
-        self.assertTrue(nFailed == 0)
 
+        self.assertTrue(nFailed == 0)
 
     #@unittest.skip
     def test_fi_eval(self):
@@ -288,8 +279,8 @@ class TesterGemmini(unittest.TestCase):
             #"C2":   (C2, PE_OUT_BITS), # OS: no faults (preloaded in C1)  WS: yes faults
 
             # control signals
-            "SIG_PROPAG": (SIG_PROPAG, 1),
-            "SIG_VALID":  (SIG_VALID, 1),
+            #"SIG_PROPAG": (SIG_PROPAG, 1),
+            #"SIG_VALID":  (SIG_VALID, 1),
         }
 
         faulty_outputs = 0

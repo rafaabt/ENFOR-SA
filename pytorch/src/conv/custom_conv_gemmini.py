@@ -120,7 +120,7 @@ class CustomConv:
         )
 
         # keeps track of the different levels in which fault masking can occur during convolution
-        gemm_msk, scale_msk, round_msk, clamp_msk = False, False, False, False
+        gemm_msk = scale_msk = round_msk = clamp_msk = False
 
         if self.is_per_tensor_qtz:
             weight_scale_tile = self.weight_scale_exp   
@@ -181,10 +181,6 @@ class CustomConv:
         # TODO: check if this should be compiled ahead of time
         z_out_gold = z_int_gold*self.input_scale*weight_scale_tile/self.output_scale + self.z_zero_point
         z_out_gemm = z_int_gemm*self.input_scale*weight_scale_tile/self.output_scale + self.z_zero_point
-
-        #if (z_out_gold > 255).sum() > 0: print("[Debug]: case 5") # never happens. z_out_gold is alwas < 255 due to proper scaling and zero_point
-        # QuantizedConv2d:     z_out_gold is always positive because the + self.z_zero_point
-        # QuantizedConvReLU2d: z_out_gold can have negative values - the + self.z_zero_point does not shift them to positive -> these will be clamped by the activation
 
         scale_msk = not gemm_msk and torch.equal(z_out_gemm, z_out_gold)  # was the fault masked in the scaling?
         

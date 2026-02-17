@@ -191,6 +191,15 @@ steps_mul = gemmini_os.stream(An, Bn)
 # Only now you can flush the outputs
 steps_flu = gemmini_os.flush_gemm(C, False)
 ```
+
+### Streaming in OS
+In OS mode, there's support for streaming the tensor A (left to right) and tensor B (top to bottom) with varying streaming sizes. The number of rows in A and the number of columns in B should always match the size of the systolic array (DIM). The 'streaming size', which is number of columns in A (matching the number of rows in B) can be of any size >= DIM. 
+
+Using large streaming sizes allows one to compute C = A[DIM][N]×B[N][DIM], for N >>> DIM. This works by streaming the full A and B tensors to the SA, hence there's no need to tile A across columns or B across rows. 
+
+For OS tiled matrix multiplication, this allows to offload the full matrix A row, and the full matrix B column to the SA.
+
+
 ### Tips on WS
 In WS, reuse the weights as much as possible. For example, to compute multiple matmuls that share a common weights, like in the example below, do:
 

@@ -88,7 +88,12 @@ def generate_fault_list(layer_id,
     l = 0
 
     while l < max_faults:
-        random_fault = gen_random_fault(shape_A, layer_id, depth=depth, num_heads=num_heads)
+        random_fault = gen_random_fault(
+            shape_A, 
+            layer_id, 
+            depth=depth, 
+            num_heads=num_heads)
+
         random_fault.tag = start_tag + l
         new_fault_list.append(random_fault)
         l += 1
@@ -110,7 +115,16 @@ def dump_fault_list (flist: List[Fault], fn="default.csv"):
         writer.writerow(header)
 
         for fault in flist:
-            csv_row = [fault.tag, fault.layer_id, fault.att_block, fault.att_head, fault.x, fault.y, target, fault.bit]
+            csv_row = [
+                fault.tag, 
+                fault.layer_id, 
+                fault.att_block, 
+                fault.att_head, 
+                fault.x, 
+                fault.y, 
+                target, 
+                fault.bit
+            ]
 
             writer.writerow(csv_row)
 

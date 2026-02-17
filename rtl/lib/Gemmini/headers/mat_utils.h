@@ -91,86 +91,168 @@ static void scale(T a[M][N], float scale)
             a[i][j] =  a[i][j]*scale;
 }
 
+/*
+paddRowsWithZeros: 
 
-template <class T, size_t M, size_t N>
-static void paddRowsWithZeros(T out[M][N], const T in[M][M]) 
-{
-    size_t start = 0;
+Receives an input matrix, e.g.,:
 
-    bzero (out, sizeof(T)*M*N);
+1  2  3  4
+5  6  7  8
+9  10 11 12
+13 14 15 16
 
-    for (size_t i = 0; i < M; i++) 
+Returns a padded matrix with zeros, e.g.,:
+
+1  2  3  4  0  0  0
+0  5  6  7  8  0  0 
+0  0  9  10 11 12 0
+0  0  0  13 14 15 16
+
+Example for DIM4:
+
+Setting the Mesh input:
+    for(uint8_t r = 0; r < DIM; r++)
     {
-        for (size_t j = 0; j < M; j++)
-            out[i][start+j] = in[i][j];
-        start++;
+        *mesh->ptr_mesh_in_a[r] = inputA[r][it];
+        *mesh->ptr_mesh_in_b[r] = inputB[r][it];
+    }
+
+it 0:
+    ptr_mesh_in_a[0] = 1
+    ptr_mesh_in_a[1] = 0
+    ptr_mesh_in_a[2] = 0
+    ptr_mesh_in_a[3] = 0
+
+it 1:
+    ptr_mesh_in_a[0] = 2
+    ptr_mesh_in_a[1] = 5
+    ptr_mesh_in_a[2] = 0
+    ptr_mesh_in_a[3] = 0
+
+it 2:
+    ptr_mesh_in_a[0] = 3
+    ptr_mesh_in_a[1] = 6
+    ptr_mesh_in_a[2] = 9
+    ptr_mesh_in_a[3] = 0
+
+...
+
+
+This is used to simulate a systolic shiffted inputs by reading one col at time
+
+1
+2 5
+3 6 9
+4 7 10 13
+
+
+if (it < PDIM)
+    for(uint8_t r = 0; r < DIM; r++)
+    {
+        *mesh->ptr_mesh_in_a[r] = inputA[r][it];
+        *mesh->ptr_mesh_in_d[r] = inputD[r][it];
+    }
+
+*/
+
+
+template <class T>
+void transpose(const T *in, T *out, uint16_t rows, uint16_t cols)
+{
+    for (size_t i = 0; i < rows; i++)
+    {
+        for (size_t j = 0; j < cols; j++)
+        {
+            out[j * rows + i] = in[i * cols + j];
+        }
     }
 }
 
 
-template <class T, size_t M, size_t N>
-static void paddRowsWithZerosTransp(T out[M][N], const T in[M][M]) 
+template <class T>
+void paddRowsWithZeros(T *out, const T *in, uint16_t in_cols)
 {
-    size_t start = 0;
+    uint16_t out_cols = 2*in_cols - 1;
 
-    bzero (out, sizeof(T)*M*N);
+    for (size_t i = 0; i < DIM * out_cols; i++)
+        out[i] = 0;
 
-    for (size_t i = 0; i < M; i++) 
+    for (size_t i = 0; i < DIM; i++)
     {
-        for (size_t j = 0; j < M; j++)
-            out[i][start+j] = in[j][i];
-        start++;
+        for (size_t j = 0; j < in_cols; j++)
+        {
+            out[i * out_cols + j + i] = in[i * in_cols + j];
+        }
     }
 }
 
 
-template <class T, size_t M, size_t N>
-static bool compare(T a[M][N], T b[M][N]) 
+template <class T>
+void paddRowsWithZerosTransp(T *out, const T *in, uint16_t in_cols)
 {
-    for (size_t i = 0; i < M; i++) 
-        for (size_t j = 0; j < N; j++) 
-            if (a[i][j] != b[i][j])
-                return false;
+    uint16_t out_cols = 2*in_cols - 1;
+
+    for (size_t i = 0; i < DIM * out_cols; i++)
+        out[i] = 0;
+
+    for (size_t i = 0; i < DIM; i++)
+    {
+        for (size_t j = 0; j < in_cols; j++)
+            out[i * out_cols + j + i] = in[j * DIM + i];
+    }
+}
+
+
+template <class T>
+static bool compare(T *a, T *b, uint16_t rows, uint16_t cols) 
+{
+    T* pa = a;
+    T* pb = b;
+
+    for (size_t k = 0; k < rows*cols; k++)
+        if (*pa++ != *pb++)
+            return false;
+
     return true;
 }
 
 
-template <class T, size_t M, size_t N>
-static void accumulate(T a[M][N], const T b[M][N]) 
+template <class T>
+static void accumulate(T *a, const T *b, uint16_t a_rows, uint16_t b_cols) 
 {
-    for (size_t i = 0; i < M; i++) 
-        for (size_t j = 0; j < N; j++) 
-            a[i][j] += b[i][j];
+    for (size_t i = 0; i < a_rows; i++) 
+        for (size_t j = 0; j < b_cols; j++) 
+            a[i*b_cols + j] += b[i*b_cols + j];
 }
 
 
-template <class T, size_t M, size_t N>
-static void print(const T in[M][N])
+template <class T>
+static void print(const T *in, uint16_t rows, uint16_t cols)
 {
-    for (size_t i = 0; i < M; i++) 
+    for (size_t i = 0; i < rows; i++) 
     {
-        for (size_t j = 0; j < N; j++) 
-            printf ("%d ", in[i][j]);
+        for (size_t j = 0; j < cols; j++) 
+            printf ("%d ", in[i*cols +j]);
         printf("\n");
     }
     printf("\n");
 }
 
 
-template <class T, size_t M, size_t N>
-static void debugPrint(const T gold[M][N], const T a[M][N])
+template <class T>
+static void debugPrint(const T *gold, const T *a, uint16_t rows, uint16_t cols)
 {
-    for (size_t i = 0; i < M; i++) 
+    for (size_t i = 0; i < rows; i++) 
     {
-        for (size_t j = 0; j < N; j++) 
-            ffprintf (stdout, gold[i][j]);
+        for (size_t j = 0; j < cols; j++) 
+            ffprintf (stdout, gold[i*cols + j]);
 
         printf (" | ");
 
-        for (size_t j = 0; j < N; j++) 
+        for (size_t j = 0; j < cols; j++) 
         {
-            printf ("%s", a[i][j] != gold[i][j] ? RED : RESET); 
-            ffprintf (stdout, a[i][j]);
+            printf ("%s", a[i*cols + j] != gold[i*cols + j] ? RED : RESET); 
+            ffprintf (stdout, a[i*cols + j]);
             printf ("%s", RESET); 
         }
         printf("\n");
@@ -185,46 +267,76 @@ int random_int(int min, int max)
 }
 
 
-template <class T, size_t M, size_t N>
-static void loadRand(T a[M][N])
+template <class T>
+static void loadRand(T *a, uint16_t rows, uint16_t cols)
 {
-    for (size_t i = 0; i < M; i++) 
-        for (size_t j = 0; j < N; j++) 
-            a[i][j] = random_int(elem_t_min, elem_t_max);
-}
-
-template <class T, size_t M, size_t N>
-static void loadOnes(T a[M][N])
-{
-    for (size_t i = 0; i < M; i++) 
-        for (size_t j = 0; j < N; j++) 
-            a[i][j] = 1; 
+    for (size_t i = 0; i < rows; i++) 
+        for (size_t j = 0; j < cols; j++) 
+            a[i*cols + j] = random_int(elem_t_min, elem_t_max);
 }
 
 
-template <class T1, class T2, size_t M, size_t N, size_t K>
-static void matmul(const T1 A[M][N], const T1 B[M][N], T2 C[M][N]) 
+template <class T>
+static void loadZeros(T *a, uint16_t rows, uint16_t cols)
 {
-    for (size_t r = 0; r < M; r++)
-        for (size_t c = 0; c < K; c++) 
+    for (size_t i = 0; i < rows; i++) 
+        for (size_t j = 0; j < cols; j++) 
+            a[i*cols + j] = 0;
+}
+
+
+template <class T>
+static void loadOnes(T *a, uint16_t rows, uint16_t cols)
+{
+    for (size_t i = 0; i < rows; i++) 
+        for (size_t j = 0; j < cols; j++) 
+            a[i*cols + j] = i+j+1;
+}
+
+template <class TypeIn, class TypeOut>
+static void matmul(const TypeIn *A, const TypeIn *B, TypeOut *C, uint16_t a_rows, uint16_t a_cols, uint16_t b_rows, uint16_t b_cols) 
+{
+    // Optional safety check (good practice)
+    // assert(a_cols == b_rows);
+    for (size_t r = 0; r < a_rows; r++)
+    {
+        for (size_t c = 0; c < b_cols; c++)
         {
-            C[r][c] = 0;
-            for (size_t k = 0; k < N; k++)
-                C[r][c] += A[r][k]*B[k][c];
+            TypeOut acc = 0;
+
+            for (size_t k = 0; k < a_cols; k++)  // <-- FIXED
+            {
+                acc += (TypeOut)A[r * a_cols + k] *
+                       (TypeOut)B[k * b_cols + c];
+            }
+
+            C[r * b_cols + c] = acc;
         }
+    }
 }
 
 
-template <class T1, class T2, size_t M, size_t N, size_t K>
-static void matmul(T1 A[M][N], T1 B[N][K], T2 D[M][K], T2 C[M][K]) 
+template <class TypeIn, class TypeOut>
+static void matmul(const TypeIn *A, const TypeIn *B, TypeIn *D, TypeOut *C, uint16_t a_rows, uint16_t a_cols, uint16_t b_rows, uint16_t b_cols) 
 {
-    for (size_t r = 0; r < M; r++)
-        for (size_t c = 0; c < K; c++) 
+    // Optional safety check (good practice)
+    // assert(a_cols == b_rows);
+
+    for (size_t r = 0; r < a_rows; r++)
+    {
+        for (size_t c = 0; c < b_cols; c++)
         {
-            C[r][c] = D[r][c];
-            for (size_t k = 0; k < N; k++)
-                C[r][c] += A[r][k]*B[k][c];
+            TypeOut acc = D[r * b_cols + c];
+
+            for (size_t k = 0; k < a_cols; k++)  // <-- FIXED
+            {
+                acc += (TypeOut)A[r * a_cols + k] *
+                       (TypeOut)B[k * b_cols + c];
+            }
+
+            C[r * b_cols + c] = acc;
         }
+    }
 }
 
 

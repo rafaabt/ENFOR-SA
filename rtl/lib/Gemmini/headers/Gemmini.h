@@ -23,7 +23,7 @@
 #define PE_LAST_ITER_CYCLE(row,col)  (row + col + DIM - 1)
 #define PE_IS_ACTIVE(row,col,it) (it >= PE_FIRST_ITER_CYCLE(row,col) && it <= PE_LAST_ITER_CYCLE(row,col))
 
-Output_t Z[DIM][DIM], Zp[DIM][PDIM]; // zero matrix
+Output_t Z[DIM][DIM]; // zero matrix
 
 
 /* The systolic array computes C = A * B + D.
@@ -42,7 +42,7 @@ public:
         mesh = new Mesh (dut);
 
     #ifdef USE_GL_INJECTION
-        // Code removed for open source
+        // removed
     #endif
     }
 
@@ -57,27 +57,52 @@ public:
             delete context;
 
     #if USE_GL_INJECTION
-        // Code removed for open source
+        // removed
     #endif
     }
 
     uint32_t resetMesh();
 
 #ifdef GEMM_OS
-    uint32_t streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB[DIM][PDIM]); // should not be called directly as the inputs should be prepared first
-    uint32_t flushOS(Output_t outputC[DIM][DIM], bool transpose_output=false);
-    uint32_t preload(const Output_t M[DIM][DIM]);
+    uint32_t streamOS(
+        const Input_t *inputA, 
+        const Input_t *inputB, 
+        uint16_t stream_size_delay_reg);
+
+    uint32_t flushOS(Output_t *outputC, bool transpose_output=false);
+    uint32_t preload(const Output_t *M);
+
 #else // GEMM_WS
-    uint32_t streamWS(const Input_t inputA[DIM][PDIM], const Output_t inputD[DIM][PDIM], Output_t outputC[DIM][DIM]);
-    uint32_t preload(const Input_t M[DIM][DIM]);
+    uint32_t streamWS(
+        const Input_t *inputA, 
+        const Output_t *inputD, 
+        Output_t *outputC,
+        uint16_t stream_size_delay_reg);
+
+    uint32_t preload(const Input_t *M);
 #endif
 
-    void addTransientFault(FaultModel fm, int grp, int row, int col, int bit, int cell, bool silent) // set fault attributes for transient faults
+    void addTransientFault(
+        FaultModel fm, 
+        int grp, 
+        int row, 
+        int col, 
+        int bit, 
+        int cell, 
+        bool silent) // set fault attributes for transient faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, cell, silent));
     }
 
-    void addPermanentFault(FaultModel fm, int grp, int row, int col, int bit, int pol, int cell, bool silent)  // set fault attributes for permanent faults
+    void addPermanentFault(
+        FaultModel fm, 
+        int grp, 
+        int row, 
+        int col, 
+        int bit, 
+        int pol, 
+        int cell, 
+        bool silent)  // set fault attributes for permanent faults
     {
         mesh->addFaultToList(new Fault(fm, grp, row, col, bit, pol, cell, silent));
     }
@@ -85,10 +110,25 @@ public:
     void addClientFaultToList(ClientFault fault) // used when Gemmini is used in a separate process (e.g., through main-server.cpp)
     {
         if (fault.faultModel == FM_TRANSIENT)
-            addTransientFault(FaultModel::FM_TRANSIENT, fault.target, fault.row, fault.col, fault.bit, fault.cell, fault.silent);
+            addTransientFault(
+                FaultModel::FM_TRANSIENT, 
+                fault.target, 
+                fault.row, 
+                fault.col, 
+                fault.bit, 
+                fault.cell, 
+                fault.silent);
         
         else if (fault.faultModel == FM_PERMANENT)
-            addPermanentFault(FaultModel::FM_PERMANENT, fault.target, fault.row, fault.col, fault.bit, fault.pol, fault.cell, fault.silent);
+            addPermanentFault(
+                FaultModel::FM_PERMANENT, 
+                fault.target, 
+                fault.row, 
+                fault.col, 
+                fault.bit, 
+                fault.pol, 
+                fault.cell, 
+                fault.silent);
         
         else
              std::cerr << "[Server failed]: Invalid fault model = " << fault.faultModel << std::endl;
@@ -98,18 +138,6 @@ public:
     {
         mesh->clearFaultList();
     }
-
-#if 0 // old. backup
-    void setSignalValue (int cluster, int row, int val)
-    {
-        context->set<int>(cluster, row, val);
-    }
-
-    int getSignalValue (int cluster, int row)
-    {
-         return context->get<int>(cluster, row);
-    }
-#endif
 
 #ifdef ENABLE_HDFIT_VALIDATION // HDFIT was validated againts OS DIM8 only. ENABLE_HDFIT_VALIDATION must be defined in configs/<config header>
     void hdfit_prepare();
@@ -121,7 +149,7 @@ public:
     uint32_t sizeFaultList;
 
 #ifdef USE_GL_INJECTION
-    // Code removed for open source
+    // removed
 #endif
 
     Mesh *mesh;
@@ -138,7 +166,7 @@ uint32_t Gemmini::resetMesh()
     debugprintf ("Gemmini: resetMesh()\n");
 
     /* I'm reseting Gemmini by preloading the zero matrix (we don't need to multiply zero by zero) */
-    return preload(Z);
+    return preload(&Z[0][0]);
 }
 
 
@@ -150,9 +178,9 @@ uint32_t Gemmini::resetMesh()
 */
 
 #ifdef GEMM_OS
-uint32_t Gemmini::preload(const Output_t M[DIM][DIM])
+uint32_t Gemmini::preload(const Output_t *M)
 #else
-uint32_t Gemmini::preload(const Input_t M[DIM][DIM]) 
+uint32_t Gemmini::preload(const Input_t *M) 
 #endif
 {
     debugprintf ("Gemmini: preload()\n");
@@ -195,7 +223,8 @@ uint32_t Gemmini::preload(const Input_t M[DIM][DIM])
     LOOP(i, DIM) // propagates the inputs the in_d -> b_x_y registers. one cycle for the input to reach b_16_0 + one cycle to reach c1
     {   
         for(uint8_t c = 0; c < DIM; c++)
-            *mesh->ptr_mesh_in_d[c] = M[DIM-1-i][c];
+
+            *mesh->ptr_mesh_in_d[c] = M[(DIM-1-i)*DIM + c];
 
     #ifdef ENABLE_PERMANENT_FAULTS  // defined in FaultList.h
         if (hasPermanentFault)
@@ -238,7 +267,7 @@ uint32_t Gemmini::preload(const Input_t M[DIM][DIM])
 #ifdef GEMM_OS
 
 /* OS mode only: flushes the PE's accumulators to and output matix */
-uint32_t Gemmini::flushOS(Output_t outputC[DIM][DIM], bool transpose_output)
+uint32_t Gemmini::flushOS(Output_t *outputC, bool transpose_output)
 {
     debugprintf ("Gemmini: flushOS()\n");
     uint32_t steps = 0;
@@ -281,11 +310,13 @@ uint32_t Gemmini::flushOS(Output_t outputC[DIM][DIM], bool transpose_output)
         /*  I'm transposing the output directly in "hw" here, if required with transpose_output=true. for perf only */
         if (!transpose_output)
             LOOP (j, DIM)
-                outputC[DIM-1-i][j] = *mesh->ptr_mesh_out_c[j]; // the last rows are flushed first
+                outputC[(DIM-1-i)*DIM + j] = *mesh->ptr_mesh_out_c[j]; // the last rows are flushed first
+  
         else
             LOOP (j, DIM)
-                outputC[j][DIM-1-i] = *mesh->ptr_mesh_out_c[j];   
+                outputC[j*DIM + DIM-1-i] = *mesh->ptr_mesh_out_c[j];
     }
+
     return steps;
 }
 
@@ -294,14 +325,15 @@ uint32_t Gemmini::flushOS(Output_t outputC[DIM][DIM], bool transpose_output)
     OS Gemmini implementation. This propagates the matrices A and B through the array. If D is not zero, it must be preloaded before this computation 
     TODO: this can be generalized to any size 'd' in the form: inputA[DIM][d] and inputB[DIM][d])
 */
-uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB[DIM][PDIM])
+uint32_t Gemmini::streamOS(
+        const Input_t *inputA, 
+        const Input_t *inputB, 
+        uint16_t stream_size_delay_reg)  // the number of columns in inputA (== number of rows in inputB)
 {
     debugprintf ("Gemmini: streamOS()\n");
-    //uint32_t countPeOps[DIM][DIM];  // counts the number of operations per PE (should be DIM). The simulation finishes when the last PE (PE[DIM-1][DIM-1]) operates DIM times
+
     uint32_t it = 0;
     bool finished = false;
-    
-    //bzero(countPeOps, sizeof(uint32_t)*DIM*DIM);
 
     hasTransientFault = false; 
     hasPermanentFault = false;
@@ -320,7 +352,7 @@ uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB
     if (hasTransientFault) // assuming a single transient fault in the fault list
         theTransientFault = mesh->faultList[0];
 
-    mesh->reset();
+    //mesh->reset();
     
 #ifdef ENABLE_HDFIT_VALIDATION // HDFIT was validated againts OS DIM8 only. ENABLE_HDFIT_VALIDATION must be defined in configs/<config header>
     /*
@@ -330,19 +362,31 @@ uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB
             according to the fault position and targets
         - See the file /rtl/lib/Gemmini/HDFIT-fault-map-os-DIM8.txt, which is a sketch showing how this was done
     */
-
     if (sizeFaultList > 0)
         hdfit_prepare();
 #endif
 
-    while (!finished && it < TIMEOUT_ITERS) // TIMEOUT_ITERS: 15000
+    uint32_t timeout_iters = 10*stream_size_delay_reg;
+
+    while (!finished && it < timeout_iters) // TIMEOUT_ITERS: 15000
     {   
-        if (it <= PDIM)
+        if (it < stream_size_delay_reg)
         {
             for(uint8_t r = 0; r < DIM; r++)
             {
-                *mesh->ptr_mesh_in_a[r] = inputA[r][it];
-                *mesh->ptr_mesh_in_b[r] = inputB[r][it];
+                *mesh->ptr_mesh_in_a[r] = inputA[r*stream_size_delay_reg + it];
+                *mesh->ptr_mesh_in_b[r] = inputB[r*stream_size_delay_reg + it];
+            }
+        }
+
+        else if (it == stream_size_delay_reg) // set the mesh inputs to zero once all inputs were streamed
+        {
+            for(uint8_t r = 0; r < DIM; r++)
+            {
+                *mesh->ptr_mesh_in_a[r] = 0;
+                *mesh->ptr_mesh_in_b[r] = 0;
+                *mesh->ptr_mesh_valid[r] = 0;
+                *mesh->ptr_mesh_propagate[r] = 0;
             }
         }
 
@@ -353,7 +397,7 @@ uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB
             //*mesh->ptr_mesh_shift[it] = 1; // this is only used when propag changes values (see PE.scala and PE.sv). therefore there's no need to reset this to zero for the same matmul
         }
 
-    #ifndef USE_GL_INJECTION // RTL: faults are injected here. GL: faults are injected after the MAC operation by replacing the current MACs output with an output computed at GL 
+    #ifndef USE_GL_INJECTION 
         if (hasTransientFault)
         {
         /* Validation against HDFIT. HDFIT was validated againts OS DIM8 only */
@@ -394,21 +438,24 @@ uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB
     #endif // ifndef USE_GL_INJECTION
 
     #ifdef USE_GL_INJECTION
-        // Code removed for open source
+        // removed
     #endif
 
         cycle = context->step();   // runs a single-cycle DUT step. note that when this executes, the inputs also change again (this is why i saved them before)
 
     #ifdef USE_GL_INJECTION 
-        // Code removed for open source
+        // removed
     #endif
 
-        //printf("it = %d res = %d\n", it, *(int*)mesh->pe[7][7]->ptr_c1);
-        finished = it == 3*DIM-2; // this is the minimum number of iterations we need for the last c1 pe to compute the final output
+    #ifdef ENABLE_HDFIT_VALIDATION
+        finished = it == stream_size_delay_reg + 1;
+    #else
+        finished = it == stream_size_delay_reg;
+    #endif
+
         it++;
     }
 
-    //printf("Iterations: %u\n", it);
 #ifdef ENABLE_PERMANENT_FAULTS
     if (hasPermanentFault)
         mesh->holdPermanentFaults();
@@ -428,7 +475,11 @@ uint32_t Gemmini::streamOS(const Input_t inputA[DIM][PDIM], const Input_t inputB
     - flow A and D through the array
     - if there's no bias D matrix, inputD is the zero matrix */
 
-uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t inputD[DIM][PDIM], Output_t outputC[DIM][DIM])
+uint32_t Gemmini::streamWS(
+        const Input_t *inputA, 
+        const Output_t *inputD, 
+        Output_t *outputC,
+        uint16_t stream_size_delay_reg)
 {    
     debugprintf ("Gemmini: streamWS()\n");
 
@@ -457,15 +508,26 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
 
     mesh->reset();
 
-    while (!finished && it < TIMEOUT_ITERS)
+    uint32_t timeout_iters = 10*stream_size_delay_reg;
+
+    while (!finished && it < timeout_iters)
     {  
         /* Writes a whole column of matrix A to the Mesh io_in_a_x_y input pins */
-        if (it <= PDIM)
+        if (it < stream_size_delay_reg)
         {
             for(uint8_t r = 0; r < DIM; r++)
             {
-                *mesh->ptr_mesh_in_a[r] = inputA[r][it];
-                *mesh->ptr_mesh_in_b[r] = inputD[r][it]; // in WS we must feed the bias D matrix to in_b (check the Verilog to see why). once the D was already preloaded (in_d), the verilog code only cares that the two matrices to be multiplied are fed in in_a and in_b
+                *mesh->ptr_mesh_in_a[r] = inputA[r*stream_size_delay_reg + it];
+                *mesh->ptr_mesh_in_b[r] = inputD[r*stream_size_delay_reg + it]; // in WS we must feed the bias D matrix to in_b (check the Verilog to see why). once the D was already preloaded (in_d), the verilog code only cares that the two matrices to be multiplied are fed in in_a and in_b
+            }
+        }
+
+        else if (it == stream_size_delay_reg) // set the mesh inputs to zero once all inputs were streamed
+        {
+            for(uint8_t r = 0; r < DIM; r++)
+            {
+                *mesh->ptr_mesh_in_a[r] = 0;
+                *mesh->ptr_mesh_in_b[r] = 0;
             }
         }
 
@@ -475,7 +537,7 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
             *mesh->ptr_mesh_propagate[it] = 1;
         }
 
-    #ifndef USE_GL_INJECTION // RTL: faults are injected here. GL: faults are injected after the MAC operation by replacing the current MACs output with an output computed at GL 
+    #ifndef USE_GL_INJECTION
         if (hasTransientFault)
         {
             if (!theTransientFault->performed)
@@ -511,13 +573,13 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
     #endif // ifndef USE_GL_INJECTION
 
     #ifdef USE_GL_INJECTION
-        // Code removed for open source
+        // removed
     #endif
 
         cycle = context->step();   // runs a single-cycle DUT step. note that when this executes, the inputs also change again (this is why i saved them before)
 
     #ifdef USE_GL_INJECTION 
-        // Code removed for open source
+        // removed
     #endif
 
         LOOP(i,DIM) // stores each of the PEs outputs, if available, and checks for end of simulation
@@ -527,16 +589,15 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
                 countPeOps[i][j] += *(CData*)mesh->pe[i][j]->ptr_propagate; // When hitting the ptr_propagate signals, countPeOps may not increase, causing a timeout
                 
                 if (countPeOps[i][j] == DIM+1) // DIM+1: one extra cycle so that the output appears in the Mesh output
-                //if (it == PE_LAST_ITER_CYCLE(i,j) + 1) // works too
-                    outputC[j][i] = *mesh->ptr_mesh_out_b[i]; // take the output from the Mesh output signals
+                    outputC[j*DIM + i] = *mesh->ptr_mesh_out_b[i];
             }
         }
 
-        finished = countPeOps[DIM-1][DIM-1] == DIM+1; //  // if the last PE computed the last sum, the matmul is finished
-        //finished = it == 3*DIM-2; // countPeOps[DIM-1][DIM-1] == DIM+1;
+        finished = countPeOps[DIM-1][DIM-1] == DIM+1; // if the last PE computed the last sum, the matmul is finished
         it++;
     }
 
+#if 0
     LOOP(i,DIM)
     {
         *mesh->ptr_mesh_valid[i] = 0;
@@ -545,8 +606,8 @@ uint32_t Gemmini::streamWS(const Input_t inputA[DIM][PDIM], const Output_t input
 
     LOOP(i,DIM)
         cycle = context->step();
+#endif
 
-    //MatUtils::transpose<Output_t,DIM,DIM>(outputC, outputCt);  // removed. now attributing 'outputC[j][i] = *mesh->ptr_mesh_out_b[i]' instead of  'outputCt[i][j] = *mesh->ptr_mesh_out_b[i]'
     return it;
 }
 

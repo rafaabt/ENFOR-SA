@@ -15,20 +15,22 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import src.gemmini.gemmini_config as conf
 import src.gemmini.gemmini_interface as gemmini_interface
 
-
 MIN_INT, MAX_INT = -128, 127
 INPUT_TYPE  = conf.GEMM_INPUT_DTYPE
 OUTPUT_TYPE = conf.GEMM_OUTPUT_DTYPE
-
 
 def perf_measure_resnet50_first_layer(gemmini):
     # ResNet50: shape of the first conv layer
     #shape_layer = (torch.Size([64, 147]), torch.Size([147, 12544]))
 
     print("Estimating ResNet50 (first) layer times...")
-    W = torch.randint(MIN_INT, MAX_INT, torch.Size([64, 147]), dtype=torch.int)
-    I = torch.randint(MIN_INT, MAX_INT, torch.Size([147, 12544]), dtype=torch.int)
-    bias = torch.randint(MIN_INT, MAX_INT, torch.Size([64, 12544]), dtype=torch.int)
+    w_r, w_c = 64, 147
+    i_r, i_c = w_c, 12544
+    b_r, b_c = w_r, i_c
+
+    W = torch.randint(MIN_INT, MAX_INT, torch.Size([w_r, w_c]), dtype=torch.int)
+    I = torch.randint(MIN_INT, MAX_INT, torch.Size([i_r, i_c]), dtype=torch.int)
+    bias = torch.randint(MIN_INT, MAX_INT, torch.Size([b_r, b_c]), dtype=torch.int)
 
     if conf.GEMM_MODE == conf.MODE_WS:
         Wt = W.t().contiguous() # very important: all tensors sent to Gemmini must be contiguous
@@ -37,13 +39,14 @@ def perf_measure_resnet50_first_layer(gemmini):
 
     time_samples = []
     nsamples = 1
+    stream_size = conf.DIM + 4
 
     for _ in range(nsamples):
         start = time.time()
         
         # OS mode
         if conf.GEMM_MODE == conf.MODE_OS:
-            O = gemmini.tiled_matmul(A=W, B=I, D=bias)  # computes W*I + bias (which is what we want)
+            O = gemmini.tiled_matmul(A=W, B=I, D=bias, stream_size=stream_size)  # computes W*I + bias (which is what we want)
 
         # WS mode
         else: # In WS, we have to make the *weight* stationary, so we must feed the weights to the B pins in Gemmini, so we compute as follows:
@@ -125,24 +128,34 @@ def measure_matmul_rtl_performance(gemmini):
     print()
 
 
-if __name__ == '__main__':
-    # sweeps through all configs keys
-    for CONFIG_KEY in conf.CONFIG_PARAMS.keys():
-        print(f"Testing with config: {CONFIG_KEY}")
-        
-        mode = conf.CONFIG_PARAMS[CONFIG_KEY]["mode"]
 
-        if mode == conf.MODE_OS:
-            gemmini = gemmini_interface.GemminiOS(CONFIG_KEY)
+# sweeps through all configs keys
+tested_configs = [
+    "OSDIM4",
+    "OSDIM8",
+    "OSDIM16",
+    "OSDIM32",
+    "OSDIM64",
+    "WSDIM4",
+    "WSDIM8"
+]
 
-        elif mode == conf.MODE_WS:
-            gemmini = gemmini_interface.GemminiWS(CONFIG_KEY)
-        
-        else:
-            raise("Invalid Gemmini mode")
+for CONFIG_KEY in tested_configs:
+    print(f"Testing with config: {CONFIG_KEY}")
+    
+    mode = conf.CONFIG_PARAMS[CONFIG_KEY]["mode"]
 
-        perf_measure_resnet50_first_layer(gemmini)
-        measure_matmul_rtl_performance(gemmini)
-        measure_verilated_tick_time(gemmini)
+    if mode == conf.MODE_OS:
+        gemmini = gemmini_interface.GemminiOS(CONFIG_KEY)
 
-        gemmini.finish()
+    elif mode == conf.MODE_WS:
+        gemmini = gemmini_interface.GemminiWS(CONFIG_KEY)
+    
+    else:
+        raise("Invalid Gemmini mode")
+
+    perf_measure_resnet50_first_layer(gemmini)
+    #measure_matmul_rtl_performance(gemmini)
+    #measure_verilated_tick_time(gemmini)
+
+    gemmini.finish()
